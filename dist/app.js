@@ -196,8 +196,8 @@ async function getAccessToken() {
                     }
                 },
             });
-            // Attempt to get a token by displaying a popup
-            client.popup();
+            // Attempt to get a token silently, prompting the user to select an account if needed
+            client.requestAccessToken();
         }
         catch (error) {
             reject(new Error(`Failed to initialize or display popup: ${error.message}`));
