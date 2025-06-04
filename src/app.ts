@@ -252,7 +252,7 @@ async function getAccessToken(prompt:boolean = false): Promise<string> {
               // User needs to grant consent or log in/select account
               // Trigger the interactive flow with a user gesture
               // (e.g., a button click)
-              console.warn("Silent token acquisition failed. User interaction needed.");
+              console.log("Silent token acquisition failed. User interaction needed.");
               // We DO NOT automatically call client.requestAccessToken() here again without a user gesture. This would lead to pop-up blockers.
 
               if (confirm("Silent token acquisition failed. User interaction needed. Do you agree to manually login to your google account?")) getAccessToken(true);
@@ -311,7 +311,7 @@ function speak(text: string, lang: string, voice?: SpeechSynthesisVoice, rate: n
     if (voice) {
       utterance.voice = voice;
     } else {
-      console.warn(`Voice "${voiceName}" not found. Using default voice.`);
+      console.log(`Voice "${voiceName}" not found. Using default voice.`);
     }
   
 
