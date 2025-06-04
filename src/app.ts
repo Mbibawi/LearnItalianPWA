@@ -222,7 +222,7 @@ async function getAccessToken(): Promise<string> {
 
     // Initialize the Google Sign-In client
     try {
-      const client = google.accounts.oauth2.initCodeClient({
+      const client = google.accounts.oauth2.initTokenClient({
         client_id: CLIENT_ID,
         scope: 'openid profile email', // Adjust scopes as needed
         redirect_uri: REDIRECT_URI,
