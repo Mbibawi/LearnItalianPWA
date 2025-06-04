@@ -158,7 +158,6 @@ async function translateAndRepeat() {
     const text = translationInput.value.trim();
     const targetLang = targetlangSelect.value;
     const sourceLanguage = sourceLangSelect.value;
-    const voice = voiceName.value;
     const pause = parseInt(pauseDurationInput.value) || 1;
     const count = parseInt(repeatCountInput.value) || 1;
     if (!text || !targetLang || !sourceLanguage)
@@ -174,17 +173,21 @@ async function translateAndRepeat() {
     if (!translation)
         return;
     resultOutput.textContent = translation;
-    localStorage.voiceName = voiceName; // Store the voice name for future use
-    repeatText(translation, targetLang, count, pause, voice, rate, pitch); // Call the repeatText function with the translation
+    function getVoice() {
+        const voice = voiceName.value;
+        const voices = speechSynthesis.getVoices();
+        return voices.find(v => v.name === voice);
+    }
+    repeatText(translation, targetLang, count, pause, getVoice(), rate, pitch); // Call the repeatText function with the translation
 }
 // Repetition logic with pause
-async function repeatText(text, lang, count, pause, voiceName, rate = 1, pitch = 1) {
+async function repeatText(text, lang, count, pause, voice, rate = 1, pitch = 1) {
     for (let i = 0; i < count; i++) {
-        speak(text, lang, voiceName, rate, pitch); // Speak the text with default rate and pitch
+        speak(text, lang, voice, rate, pitch); // Speak the text with default rate and pitch
         await new Promise(resolve => setTimeout(resolve, (pause + 1) * 1000));
     }
 }
-async function getAccessToken() {
+async function getAccessToken(prompt = false) {
     return new Promise((resolve, reject) => {
         // Ensure that CLIENT_ID and REDIRECT_URI are defined elsewhere in your code
         if (!CLIENT_ID || !REDIRECT_URI) {
@@ -202,15 +205,31 @@ async function getAccessToken() {
                         resolve(tokenResponse.access_token);
                     }
                     else {
-                        reject(new Error('Failed to retrieve access token.'));
+                        // Determine if user interaction is needed
+                        const requiresInteraction = tokenResponse.error === 'consent_required' || tokenResponse.error === 'login_required' || tokenResponse.error === 'interaction_required';
+                        // Handle errors from silent attempt
+                        if (requiresInteraction) {
+                            // User needs to grant consent or log in/select account
+                            // Trigger the interactive flow with a user gesture
+                            // (e.g., a button click)
+                            console.warn("Silent token acquisition failed. User interaction needed.");
+                            // We DO NOT automatically call client.requestAccessToken() here again without a user gesture. This would lead to pop-up blockers.
+                            if (confirm("Silent token acquisition failed. User interaction needed. Do you agree to manually login to your google account?"))
+                                getAccessToken(true);
+                            else
+                                reject(new Error(`Failed to retrieve access token: ${tokenResponse.error || 'Unknown error'}`));
+                        }
                     }
                 },
             });
             // Attempt to get a token silently, prompting the user to select an account if needed
-            client.requestAccessToken();
+            if (!prompt)
+                client.requestAccessToken({ prompt: 'none' });
+            else
+                client.requestAccessToken();
         }
         catch (error) {
-            reject(new Error(`Failed to initialize or display popup: ${error.message}`));
+            reject(new Error('User interaction required for token acquisition.'));
         }
     });
 }
@@ -235,21 +254,16 @@ async function _getAccessToken() {
     const storedAccessToken = localStorage.getItem('access_token');
 }
 // Speak text using SpeechSynthesis API
-function speak(text, lang, voiceName, rate = 1, pitch = 1) {
+function speak(text, lang, voice, rate = 1, pitch = 1) {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = `${lang.toLocaleLowerCase()}-${lang.toUpperCase()}`; // Set language for the utterance
     utterance.pitch = pitch; // Set the pitch for the utterance
     utterance.rate = rate; // Set the speaking rate
-    // Voice selection
-    if (voiceName) {
-        const voices = speechSynthesis.getVoices();
-        const voice = voices.find(voice => voice.name === voiceName);
-        if (voice) {
-            utterance.voice = voice;
-        }
-        else {
-            console.warn(`Voice "${voiceName}" not found. Using default voice.`);
-        }
+    if (voice) {
+        utterance.voice = voice;
+    }
+    else {
+        console.warn(`Voice "${voiceName}" not found. Using default voice.`);
     }
     speechSynthesis.speak(utterance);
 }

@@ -191,7 +191,6 @@ async function translateAndRepeat() {
     const text = translationInput.value.trim();
   const targetLang = targetlangSelect.value;
   const sourceLanguage = sourceLangSelect.value;
-  const voice = voiceName.value;
   const pause = parseInt(pauseDurationInput.value) || 1;
   const count = parseInt(repeatCountInput.value) || 1;
   if (!text || !targetLang || !sourceLanguage) return;
@@ -204,50 +203,71 @@ async function translateAndRepeat() {
   const [rate, pitch] = ratePitch?.split(',').map(Number) || [1, 1];
   
   if (!text || isNaN(count) || isNaN(pause)) return;
-
-    if (!translation) return;
+  
+  if (!translation) return;
   resultOutput.textContent = translation;
   
-  localStorage.voiceName = voiceName; // Store the voice name for future use
-    repeatText(translation, targetLang, count, pause, voice, rate, pitch); // Call the repeatText function with the translation
+  function getVoice() {
+    const voice = voiceName.value;
+    const voices = speechSynthesis.getVoices();
+    return voices.find(v => v.name === voice)
+    }
+    
+    repeatText(translation, targetLang, count, pause, getVoice(), rate, pitch); // Call the repeatText function with the translation
+  
 }
 
 // Repetition logic with pause
-async function repeatText(text: string, lang:string, count: number, pause: number, voiceName:string, rate:number = 1, pitch:number = 1) {
+async function repeatText(text: string, lang:string, count: number, pause: number, voice:SpeechSynthesisVoice | undefined, rate:number = 1, pitch:number = 1) {
     for (let i = 0; i < count; i++) {
-      speak(text, lang, voiceName, rate, pitch); // Speak the text with default rate and pitch
+      speak(text, lang, voice, rate, pitch); // Speak the text with default rate and pitch
       await new Promise(resolve => setTimeout(resolve, (pause + 1) * 1000));
     }
 }
 
 
-async function getAccessToken(): Promise<string> {
+async function getAccessToken(prompt:boolean = false): Promise<string> {
   return new Promise((resolve, reject) => {
     // Ensure that CLIENT_ID and REDIRECT_URI are defined elsewhere in your code
     if (!CLIENT_ID ||! REDIRECT_URI) {
       reject(new Error('CLIENT_ID or REDIRECT_URI is not defined.'));
       return;
     }
-
+    type token = { access_token?: string; error?: string; error_description?: string }
     // Initialize the Google Sign-In client
     try {
       const client = google.accounts.oauth2.initTokenClient({
         client_id: CLIENT_ID,
         scope: 'openid profile email', // Adjust scopes as needed
         redirect_uri: REDIRECT_URI,
-        callback: (tokenResponse: {access_token:string}) => {
+        callback: (tokenResponse: token) => {
           if (tokenResponse && tokenResponse.access_token) {
             resolve(tokenResponse.access_token);
           } else {
-            reject(new Error('Failed to retrieve access token.'));
+              // Determine if user interaction is needed
+              const requiresInteraction = tokenResponse.error === 'consent_required' || tokenResponse.error === 'login_required' || tokenResponse.error === 'interaction_required';
+
+            // Handle errors from silent attempt
+            if (requiresInteraction) {
+              // User needs to grant consent or log in/select account
+              // Trigger the interactive flow with a user gesture
+              // (e.g., a button click)
+              console.warn("Silent token acquisition failed. User interaction needed.");
+              // We DO NOT automatically call client.requestAccessToken() here again without a user gesture. This would lead to pop-up blockers.
+
+              if (confirm("Silent token acquisition failed. User interaction needed. Do you agree to manually login to your google account?")) getAccessToken(true);
+              else reject(new Error(`Failed to retrieve access token: ${tokenResponse.error || 'Unknown error'}`));
+            
+            }
           }
         },
       });
 
       // Attempt to get a token silently, prompting the user to select an account if needed
-      client.requestAccessToken();
+      if (!prompt) client.requestAccessToken({ prompt: 'none' });
+      else client.requestAccessToken();
     } catch (error: any) {
-      reject(new Error(`Failed to initialize or display popup: ${error.message}`));
+        reject(new Error('User interaction required for token acquisition.'));
     }
   });
 }
@@ -281,22 +301,18 @@ async function _getAccessToken(): Promise<string | undefined>{
   const storedAccessToken = localStorage.getItem('access_token');
 }
 // Speak text using SpeechSynthesis API
-function speak(text: string, lang: string, voiceName?: string, rate: number = 1, pitch: number = 1) {
+function speak(text: string, lang: string, voice?: SpeechSynthesisVoice, rate: number = 1, pitch: number = 1) {
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = `${lang.toLocaleLowerCase()}-${lang.toUpperCase()}`; // Set language for the utterance
   utterance.pitch = pitch; // Set the pitch for the utterance
   utterance.rate = rate; // Set the speaking rate
 
-  // Voice selection
-  if (voiceName) {
-    const voices = speechSynthesis.getVoices();
-    const voice = voices.find(voice => voice.name === voiceName);
     if (voice) {
       utterance.voice = voice;
     } else {
       console.warn(`Voice "${voiceName}" not found. Using default voice.`);
     }
-  }
+  
 
   speechSynthesis.speak(utterance);
 }
