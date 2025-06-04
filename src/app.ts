@@ -210,7 +210,44 @@ async function repeatText(text: string, count: number, pause: number) {
       await new Promise(resolve => setTimeout(resolve, (pause + 1) * 1000));
     }
 }
-async function getAccessToken(): Promise<string | undefined>{
+
+
+async function getAccessToken(): Promise<string> {
+  return new Promise((resolve, reject) => {
+    // Ensure that CLIENT_ID and REDIRECT_URI are defined elsewhere in your code
+    if (!CLIENT_ID ||! REDIRECT_URI) {
+      reject(new Error('CLIENT_ID or REDIRECT_URI is not defined.'));
+      return;
+    }
+
+    // Initialize the Google Sign-In client
+    try {
+      const client = google.accounts.oauth2.initCodeClient({
+        client_id: CLIENT_ID,
+        scope: 'openid profile email', // Adjust scopes as needed
+        redirect_uri: REDIRECT_URI,
+        callback: (tokenResponse: {access_token:string}) => {
+          if (tokenResponse && tokenResponse.access_token) {
+            resolve(tokenResponse.access_token);
+          } else {
+            reject(new Error('Failed to retrieve access token.'));
+          }
+        },
+      });
+
+      // Attempt to get a token by displaying a popup
+      client.popup();
+    } catch (error: any) {
+      reject(new Error(`Failed to initialize or display popup: ${error.message}`));
+    }
+  });
+}
+
+
+
+
+
+async function _getAccessToken(): Promise<string | undefined>{
   return  'ya29.a0AW4XtxgkjhpIw3bW--snd_zp_lEgIXcBpIMxMCseznf3L1kI_ixCO4M4KUwsnSj5EYQZeZSVoN0ulVS-ntTDdrlORwo5VmibOXhIl4GBpvOsEh-yHGJqKeVS0DteqwnLyUTg4qi9lxXxjZ7YwQa0JpJxU18skviF1Z5eYuCY3waCgYKAUoSARUSFQHGX2MiD79Fg4JyZ2jZ3tdy6cT7zg0177'
   const oauthCallback = window.location.pathname === '/LearnItalianPWA/'; // Check if it's the redirect URI
 

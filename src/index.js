@@ -1,8 +1,15 @@
 const express = require('express');
 const { Translate } = require('@google-cloud/translate').v2;
 const { GoogleAuth } = require('google-auth-library');
+const cors = require('cors');
+
+const corsOptions = {
+  origin: 'https://mbibawi.github.io',
+  optionsSuccessStatus: 200 // some legacy browsers (IE11, various SmartTVs) choke on 204
+}
 
 const app = express();
+app.use(cors(corsOptions));
 app.use(express.json()); // Parse JSON request bodies
 
 const projectId = process.env.GCLOUD_PROJECT; // Or hardcode if necessary.
