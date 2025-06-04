@@ -188,7 +188,7 @@ async function translateWithGeminiApi(accessToken: string, text: string, targetL
 async function translateAndRepeat() {
   const accessToken = await getAccessToken();
   if (!accessToken) return console.log('Could not get accessToken');
-    const text = translationInput.value.trim();
+  const text = translationInput.value.trim();
   const targetLang = targetlangSelect.value;
   const sourceLanguage = sourceLangSelect.value;
   const pause = parseInt(pauseDurationInput.value) || 1;
@@ -197,23 +197,31 @@ async function translateAndRepeat() {
   
   resultOutput.textContent = 'Translating with Gemini...';
   //const translation = await translateText(accessToken, text, targetLang);
-  const translation = await translateUsingGoogleFunction(accessToken, text, sourceLanguage, targetLang);
+
   const ratePitch = localStorage.ratePitch || prompt('Enter rate and pitch (e.g., 1.0, 1.0):', '1.0, 1.0');
   localStorage.ratePitch = ratePitch;
   const [rate, pitch] = ratePitch?.split(',').map(Number) || [1, 1];
+  const voice = getVoice(); // Get the selected voice
+  const sentences = text.split('// ');
+
+  for (const sentence of sentences) { 
+    await processSentence(sentence)
+  }
   
-  if (!text || isNaN(count) || isNaN(pause)) return;
-  
-  if (!translation) return;
-  resultOutput.textContent = translation;
-  
+  async function processSentence(sentence: string) {
+    const translation = await translateUsingGoogleFunction(accessToken, sentence, sourceLanguage, targetLang);
+    if (!translation) return;
+    resultOutput.textContent = translation;
+    repeatText(translation, targetLang, count, pause, voice, rate, pitch); // Call the repeatText function with the translation
+
+  }
+
   function getVoice() {
     const voice = voiceName.value;
     const voices = speechSynthesis.getVoices();
     return voices.find(v => v.name === voice)
     }
     
-    repeatText(translation, targetLang, count, pause, getVoice(), rate, pitch); // Call the repeatText function with the translation
   
 }
 
@@ -274,33 +282,6 @@ async function getAccessToken(prompt:boolean = false): Promise<string> {
 }
 
 
-
-
-
-async function _getAccessToken(): Promise<string | undefined>{
-  return  'ya29.a0AW4XtxgkjhpIw3bW--snd_zp_lEgIXcBpIMxMCseznf3L1kI_ixCO4M4KUwsnSj5EYQZeZSVoN0ulVS-ntTDdrlORwo5VmibOXhIl4GBpvOsEh-yHGJqKeVS0DteqwnLyUTg4qi9lxXxjZ7YwQa0JpJxU18skviF1Z5eYuCY3waCgYKAUoSARUSFQHGX2MiD79Fg4JyZ2jZ3tdy6cT7zg0177'
-  const oauthCallback = window.location.pathname === '/LearnItalianPWA/'; // Check if it's the redirect URI
-
-  if (!oauthCallback) return;
-
-  const { accessToken, isValidState } = initiateOAuthFlow();
-
-      if (accessToken && isValidState) {
-          console.log('Successfully authenticated!');
-          localStorage.setItem('access_token', accessToken); // Store the access token
-
-          //Remove the fragment identifier from the URL
-        history.replaceState({}, document.title, window.location.pathname);
-        return accessToken
-      } else {
-          console.error('Authentication failed.');
-          // Handle authentication failure (e.g., display an error message)
-      }
-  
-
-  // Check if there's an existing access token
-  const storedAccessToken = localStorage.getItem('access_token');
-}
 // Speak text using SpeechSynthesis API
 function speak(text: string, lang: string, voice?: SpeechSynthesisVoice, rate: number = 1, pitch: number = 1) {
   const utterance = new SpeechSynthesisUtterance(text);
