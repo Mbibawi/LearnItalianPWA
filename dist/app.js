@@ -17,6 +17,26 @@ const API_SCOPE = 'https://www.googleapis.com/auth/cloud-platform'; // Or the sp
 // Gemini query handler
 geminiButton.onclick = async () => await askGemini();
 translateButton.onclick = translateAndRepeat;
+async function translateUsingGoogleFunction(accessToken, text, sourceLanguage, targetLanguage) {
+    const body = {
+        text: text,
+        targetLanguage: targetLanguage || 'it', // Default to Italian if no target language is provided
+        sourceLanguage: sourceLanguage || 'en', // Default to English if no source language is provided
+        accessToken: accessToken,
+    };
+    const response = await fetch('https://gemini-proxy-428231091257.europe-west1.run.app', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Translation failed');
+    }
+    return data.translatedText;
+}
 async function askGemini() {
     const accessToken = await getAccessToken();
     if (!accessToken)
@@ -134,12 +154,14 @@ async function translateAndRepeat() {
         return console.log('Could not get accessToken');
     const text = translationInput.value.trim();
     const targetLang = languageSelect.value;
+    const sourceLanguage = 'en'; // Default to English, can be modified as needed
     const count = parseInt(repeatCountInput.value);
     const pause = parseInt(pauseDurationInput.value);
+    resultOutput.textContent = 'Translating with Gemini...';
+    //const translation = await translateText(accessToken, text, targetLang);
+    const translation = await translateUsingGoogleFunction(accessToken, text, sourceLanguage, targetLang);
     if (!text || isNaN(count) || isNaN(pause))
         return;
-    resultOutput.textContent = 'Translating with Gemini...';
-    const translation = await translateText(accessToken, text, targetLang);
     if (!translation)
         return;
     resultOutput.textContent = translation;
