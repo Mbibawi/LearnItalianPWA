@@ -1,5 +1,4 @@
 "use strict";
-var _a;
 const translationInput = document.getElementById('translationInput');
 const sourceLangSelect = document.getElementById('sourceLanguage');
 const targetlangSelect = document.getElementById('targetLanguage');
@@ -168,7 +167,7 @@ async function translateAndRepeat() {
     localStorage.ratePitch = ratePitch;
     const [rate, pitch] = (ratePitch === null || ratePitch === void 0 ? void 0 : ratePitch.split(',').map(Number)) || [1, 1];
     const voice = getVoice(); // Get the selected voice
-    const sentences = text.split('// ');
+    const sentences = text.split('//');
     for (const sentence of sentences) {
         await processSentence(sentence.trim());
     }
@@ -251,20 +250,6 @@ function speak(text, lang, voice, rate = 1, pitch = 1) {
     }
     speechSynthesis.speak(utterance);
 }
-// Example usage:
-// 1. Get available voices
-const voices = speechSynthesis.getVoices();
-// 2. Log available voices to the console
-voices.forEach(voice => {
-    console.log(`Voice: ${voice.name}, Lang: ${voice.lang}, URI: ${voice.voiceURI}`);
-});
-// 3. Example call to speak function
-// Replace 'translatedText' with the actual translated text from your Cloud Function
-const translatedText = "Ciao, mondo!";
-// Find a specific voice (e.g., a female Italian voice)
-const italianVoiceName = (_a = voices.find(voice => voice.lang === 'it-IT' && voice.name.includes('Female'))) === null || _a === void 0 ? void 0 : _a.name;
-// Speak the translated text with the specified voice, rate, and pitch
-speak(translatedText, "it", italianVoiceName, 1.2, 1.1); // Example with voice selection, rate, and pitch
 // Main application logic
 async function translateText(accessToken, textToTranslate, targetLanguage) {
     if (!accessToken)
