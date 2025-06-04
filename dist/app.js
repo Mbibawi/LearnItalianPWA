@@ -1,8 +1,11 @@
 "use strict";
+var _a;
 const translationInput = document.getElementById('translationInput');
-const languageSelect = document.getElementById('languageSelect');
+const sourceLangSelect = document.getElementById('sourceLanguage');
+const targetlangSelect = document.getElementById('targetLanguage');
 const repeatCountInput = document.getElementById('repeatCount');
 const pauseDurationInput = document.getElementById('pauseDuration');
+const voiceName = document.getElementById('voiceName');
 const translateButton = document.getElementById('translateButton');
 const resultOutput = document.getElementById('translatedResult');
 const geminiInput = document.getElementById('geminiQuery');
@@ -153,24 +156,31 @@ async function translateAndRepeat() {
     if (!accessToken)
         return console.log('Could not get accessToken');
     const text = translationInput.value.trim();
-    const targetLang = languageSelect.value;
-    const sourceLanguage = 'en'; // Default to English, can be modified as needed
-    const count = parseInt(repeatCountInput.value);
-    const pause = parseInt(pauseDurationInput.value);
+    const targetLang = targetlangSelect.value;
+    const sourceLanguage = sourceLangSelect.value;
+    const voice = voiceName.value;
+    const pause = parseInt(pauseDurationInput.value) || 1;
+    const count = parseInt(repeatCountInput.value) || 1;
+    if (!text || !targetLang || !sourceLanguage)
+        return;
     resultOutput.textContent = 'Translating with Gemini...';
     //const translation = await translateText(accessToken, text, targetLang);
     const translation = await translateUsingGoogleFunction(accessToken, text, sourceLanguage, targetLang);
+    const ratePitch = localStorage.ratePitch || prompt('Enter rate and pitch (e.g., 1.0, 1.0):', '1.0, 1.0');
+    localStorage.ratePitch = ratePitch;
+    const [rate, pitch] = (ratePitch === null || ratePitch === void 0 ? void 0 : ratePitch.split(',').map(Number)) || [1, 1];
     if (!text || isNaN(count) || isNaN(pause))
         return;
     if (!translation)
         return;
     resultOutput.textContent = translation;
-    repeatText(translation, count, pause);
+    localStorage.voiceName = voiceName; // Store the voice name for future use
+    repeatText(translation, targetLang, count, pause, voice, rate, pitch); // Call the repeatText function with the translation
 }
 // Repetition logic with pause
-async function repeatText(text, count, pause) {
+async function repeatText(text, lang, count, pause, voiceName, rate = 1, pitch = 1) {
     for (let i = 0; i < count; i++) {
-        speak(text);
+        speak(text, lang, voiceName, rate, pitch); // Speak the text with default rate and pitch
         await new Promise(resolve => setTimeout(resolve, (pause + 1) * 1000));
     }
 }
@@ -225,11 +235,38 @@ async function _getAccessToken() {
     const storedAccessToken = localStorage.getItem('access_token');
 }
 // Speak text using SpeechSynthesis API
-function speak(text) {
+function speak(text, lang, voiceName, rate = 1, pitch = 1) {
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'it-IT';
+    utterance.lang = `${lang.toLocaleLowerCase()}-${lang.toUpperCase()}`; // Set language for the utterance
+    utterance.pitch = pitch; // Set the pitch for the utterance
+    utterance.rate = rate; // Set the speaking rate
+    // Voice selection
+    if (voiceName) {
+        const voices = speechSynthesis.getVoices();
+        const voice = voices.find(voice => voice.name === voiceName);
+        if (voice) {
+            utterance.voice = voice;
+        }
+        else {
+            console.warn(`Voice "${voiceName}" not found. Using default voice.`);
+        }
+    }
     speechSynthesis.speak(utterance);
 }
+// Example usage:
+// 1. Get available voices
+const voices = speechSynthesis.getVoices();
+// 2. Log available voices to the console
+voices.forEach(voice => {
+    console.log(`Voice: ${voice.name}, Lang: ${voice.lang}, URI: ${voice.voiceURI}`);
+});
+// 3. Example call to speak function
+// Replace 'translatedText' with the actual translated text from your Cloud Function
+const translatedText = "Ciao, mondo!";
+// Find a specific voice (e.g., a female Italian voice)
+const italianVoiceName = (_a = voices.find(voice => voice.lang === 'it-IT' && voice.name.includes('Female'))) === null || _a === void 0 ? void 0 : _a.name;
+// Speak the translated text with the specified voice, rate, and pitch
+speak(translatedText, "it", italianVoiceName, 1.2, 1.1); // Example with voice selection, rate, and pitch
 // Main application logic
 async function translateText(accessToken, textToTranslate, targetLanguage) {
     if (!accessToken)
