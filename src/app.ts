@@ -263,9 +263,10 @@ async function getAccessToken(prompt:boolean = false): Promise<string> {
         },
       });
 
+      client.requestAccessToken();
       // Attempt to get a token silently, prompting the user to select an account if needed
-      if (!prompt) client.requestAccessToken({ prompt: 'none' });
-      else client.requestAccessToken();
+      //if (!prompt) client.requestAccessToken({ prompt: 'none' });
+      //else client.requestAccessToken();
     } catch (error: any) {
         reject(new Error('User interaction required for token acquisition.'));
     }
