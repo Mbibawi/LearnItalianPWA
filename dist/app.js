@@ -155,7 +155,7 @@ async function translateAndRepeat() {
     const accessToken = await getAccessToken();
     if (!accessToken)
         return console.log('Could not get accessToken');
-    const text = translationInput.value.trim();
+    const text = translationInput.value;
     const targetLang = targetlangSelect.value;
     const sourceLanguage = sourceLangSelect.value;
     const pause = parseInt(pauseDurationInput.value) || 1;
@@ -170,14 +170,14 @@ async function translateAndRepeat() {
     const voice = getVoice(); // Get the selected voice
     const sentences = text.split('// ');
     for (const sentence of sentences) {
-        await processSentence(sentence);
+        await processSentence(sentence.trim());
     }
     async function processSentence(sentence) {
         const translation = await translateUsingGoogleFunction(accessToken, sentence, sourceLanguage, targetLang);
         if (!translation)
             return;
         resultOutput.textContent = translation;
-        repeatText(translation, targetLang, count, pause, voice, rate, pitch); // Call the repeatText function with the translation
+        await repeatText(translation, targetLang, count, pause, voice, rate, pitch); // Call the repeatText function with the translation
     }
     function getVoice() {
         const voice = voiceName.value;
