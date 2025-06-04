@@ -3,6 +3,8 @@ const translationInput = document.getElementById('translationInput') as HTMLInpu
 const sourceLangSelect = document.getElementById('sourceLanguage') as HTMLSelectElement;
 const targetlangSelect = document.getElementById('targetLanguage') as HTMLSelectElement;
 const repeatCountInput = document.getElementById('repeatCount') as HTMLInputElement;
+const voiceRate = document.getElementById('voiceRate') as HTMLInputElement;
+const voicePitch = document.getElementById('voicePitch') as HTMLInputElement;
 const pauseDurationInput = document.getElementById('pauseDuration') as HTMLInputElement;
 const voiceName = document.getElementById('voiceName') as HTMLSelectElement;
 const translateButton = document.getElementById('translateButton') as HTMLButtonElement;
@@ -198,9 +200,9 @@ async function translateAndRepeat() {
   resultOutput.textContent = 'Translating with Gemini...';
   //const translation = await translateText(accessToken, text, targetLang);
 
-  const ratePitch = localStorage.ratePitch || prompt('Enter rate and pitch (e.g., 1.0, 1.0):', '1.0, 1.0');
-  localStorage.ratePitch = ratePitch;
-  const [rate, pitch] = ratePitch?.split(',').map(Number) || [1, 1];
+  const rate = voiceRate.valueAsNumber || 1.0;
+  const pitch = voicePitch.valueAsNumber || 1.0;
+
   const voice = getVoice(); // Get the selected voice
   const sentences = text.split('//');
 
