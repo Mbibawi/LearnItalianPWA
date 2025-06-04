@@ -1,0 +1,15 @@
+{
+    "compilerOptions": {
+      "target": "es2019",
+      "module": "esnext",
+      "outDir": "./dist",
+      "rootDir": "./src",
+      "strict": true,
+      "esModuleInterop": true,
+      "sourceMap": true,
+      "lib": ["es2019", "dom"]
+    },
+    "include": ["src", "Exclude/app_OAuth2.ts"],
+    "exclude": ["node_modules", "tests", "Exclude"]
+  }
+  

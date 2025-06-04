@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Learn Italian With Gemini</title>
+</head>
+<body>
+  <h1>Gemini Translation PWA</h1>
+  
+  <section id="translationSection">
+    <h2>Translate Text</h2>
+
+    <label for="translationInput">Text to translate:</label>
+    <input type="text" id="translationInput" placeholder="Enter text in French or English" />
+
+    <label for="languageSelect">Target language:</label>
+    <select id="languageSelect" aria-label="Select target language">
+      <option value="it">Italian</option>
+      <option value="fr">French</option>
+      <option value="en">English</option>
+      <option value="es">Spanish</option>
+      <option value="de">German</option>
+      <!-- Add more languages as needed -->
+    </select>
+
+    <label for="repeatCount">Number of repetitions:</label>
+    <input type="number" id="repeatCount" min="1" max="10" value="1" />
+
+    <label for="pauseDuration">Pause between repetitions (seconds):</label>
+    <input type="number" id="pauseDuration" min="0" max="30" value="1" />
+
+    <button id="translateButton">Translate & Repeat</button>
+
+    <label>Translation Result:</label>
+    <div id="translatedResult" class="output" aria-live="polite"></div>
+  </section>
+
+  <section id="geminiSection">
+    <h2>Ask Gemini</h2>
+    
+    <label for="geminiQuery">Your question or prompt:</label>
+    <input type="text" id="geminiQuery" placeholder="Ask Gemini anything..." />
+    
+    <button id="askGemini">Send to Gemini</button>
+    
+    <label>Gemini's Response:</label>
+    <div id="geminiResponse" class="output" aria-live="polite"></div>
+  </section>
+</body>
+<script src="./dist/app.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+</html>
