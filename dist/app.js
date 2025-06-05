@@ -195,7 +195,11 @@ async function askGemini() {
         }
         const audioPlayer = new Audio();
         currentAudioPlayer = audioPlayer; // Store the reference
-        return sentences.map(async (sentence) => await playSentence(sentence));
+        const results = [];
+        for (const sentence of sentences) {
+            results.push(await playSentence(sentence));
+        }
+        return results;
         async function playSentence({ text, audio }) {
             console.log('Received text from Gemini:', text);
             // Display the text in the UI
