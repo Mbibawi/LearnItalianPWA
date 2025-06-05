@@ -1,3 +1,41 @@
+(function() { // Self-executing anonymous function
+  const swPath = './service-worker.js'; // Define your service worker path here
+
+  /**
+   * Checks if a service worker is registered. If not, it attempts to register it.
+   * This function logs its actions and does not return a value directly,
+   * but the underlying registration process is asynchronous.
+   */
+  async function ensureServiceWorkerRegisteredInternal() {
+    if (!('serviceWorker' in navigator)) {
+      console.warn('Service Workers are not supported in this browser.');
+      return; // Exit if not supported
+    }
+
+    // Check if a service worker is already controlling this page
+    if (navigator.serviceWorker.controller) {
+      console.log('Service Worker is already registered and active.');
+      // Optionally, you could still wait for it to be ready if you need the registration object
+      // navigator.serviceWorker.ready.then(registration => {
+      //   console.log('Existing Service Worker Registration:', registration);
+      // });
+      return; // Exit if already active
+    }
+
+    // If no service worker is controlling, attempt to register
+    window.addEventListener('load', async () => {
+      try {
+        const registration = await navigator.serviceWorker.register(swPath);
+        console.log('Service Worker registered successfully:', registration.scope);
+      } catch (error) {
+        console.error('Service Worker registration failed:', error);
+      }
+    });
+  }
+
+  // Automatically call the function when this script loads
+  ensureServiceWorkerRegisteredInternal();
+})();
 
 const translationInput = document.getElementById('translationInput') as HTMLInputElement;
 const sourceLangSelect = document.getElementById('sourceLanguage') as HTMLSelectElement;
@@ -206,7 +244,6 @@ async function askGemini() {
     console.log('Error fetching Gemini Query: ', error)
   }
 
-
   async function fetchGemini() {
     geminiOutput.textContent = '';
     const body = {
@@ -231,14 +268,7 @@ async function askGemini() {
     const pause = parseInt(pauseDurationInput.value) || 1;
     const repeatCount = parseInt(repeatCountInput.value) || 1;
     const repeat = Array(repeatCount).fill(0).map((_, i) => i); // Create an array to repeat the audio
-    // If there's an existing player, stop it before creating a new one
-    if (currentAudioPlayer) {
-      // currentAudioPlayer.pause();
-      // currentAudioPlayer.currentTime = 0; // Rewind
-      //URL.revokeObjectURL(currentAudioPlayer.src); // Revoke old URL
-    }
-    //const audioPlayer = new Audio();
-    //currentAudioPlayer = audioPlayer; // Store the reference
+    
     const player = document.getElementById('audioPlayer') as HTMLAudioElement || document.createElement('audio'); // Create or get the audio player
     player.id = 'audioPlayer';
     player.src = ''; // Clear the source initially
@@ -268,15 +298,10 @@ async function askGemini() {
       // Decode the Base64 audio string
       const audioBlob = b64toBlob(audio, audioMimeType);
       const audioUrl = URL.createObjectURL(audioBlob);
-      // Create the new audio player
-      //audioPlayer.src = audioUrl;
       player.src = audioUrl;
 
-
       for (const play of repeat) {
-        //audioPlayer.currentTime = 0; // Reset to start
         player.currentTime = 0; // Reset to start
-        //await audioPlayer.play();
         await player.play();
         await delay(Math.floor(pause) * 1000);
       }
