@@ -168,7 +168,7 @@ async function askGemini() {
   const cloudFunctionUrl = 'https://gemini-proxy-428231091257.europe-west1.run.app/generate-audio-content';
  // const accessToken = await getAccessToken();
   const queryText = geminiInput.value.trim();
-  let lang = targetlangSelect.value || 'en'; // Default to Italian if no target language is selected
+  let lang = targetlangSelect.options[targetlangSelect.selectedIndex].value || 'en'; // Default to Italian if no target language is selected
   lang = `${lang.toLowerCase()}-${lang.toUpperCase()}`; // e.g., 'it-IT' for Italian
   const voiceParams = {
     languageCode: lang,
