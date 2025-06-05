@@ -23,6 +23,7 @@ const REDIRECT_URI = 'https://mbibawi.github.io/LearnItalianPWA/';
 const SCOPES = 'https://www.googleapis.com/auth/userinfo.email';
 const API_SCOPE = 'https://www.googleapis.com/auth/cloud-platform'; // Or the specific Gemini API scope
 
+let currentAudioPlayer: HTMLAudioElement;
 
 // Gemini query handler
 geminiButton.onclick = async () =>await askGemini();
@@ -210,8 +211,18 @@ async function askGemini() {
             // Decode the Base64 audio string
           const audioBlob = b64toBlob(audio, audioMimeType);
           const audioUrl = URL.createObjectURL(audioBlob);
-          // Play the audio
+          
+          // If there's an existing player, stop it before creating a new one
+          if (currentAudioPlayer) {
+            currentAudioPlayer.pause();
+            currentAudioPlayer.currentTime = 0; // Rewind
+            URL.revokeObjectURL(currentAudioPlayer.src); // Revoke old URL
+          }
+          
+          // Create the new audio player
           const audioPlayer = new Audio(audioUrl);
+          // Play the audio
+          currentAudioPlayer = audioPlayer; // Store the reference
           audioPlayer.play();
           
             // Optional: Clean up the Blob URL after audio finishes
