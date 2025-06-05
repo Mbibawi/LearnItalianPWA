@@ -165,6 +165,77 @@ async function getAccessToken(prompt:boolean = false): Promise<string> {
 }
 
 async function askGemini() {
-  
-  
+  const cloudFunctionUrl = 'https://gemini-proxy-428231091257.europe-west1.run.app/generate-audio-content';
+  const accessToken = await getAccessToken();
+  const queryText = geminiInput.value.trim();
+  const voiceParams = {
+    languageCode: 'en-US',
+    name: 'en-US-Standard-E', // Example standard voice
+    ssmlGender: 'MALE',
+  };
+  const audioConfig = {
+    audioEncoding: 'MP3',// Or 'LINEAR16' for uncompressed WAV
+    speakingRate: voiceRate.value,  // 0.25 to 4.0 (1.0 is normal)
+    pitch: voicePitch.value,  // -20.0 to 20.0 (0.0 is normal)
+    volumeGainDb: 0.0,  // -96.0 to 16.0 (0.0 is normal)
+    effectsProfileId: ['small-bluetooth-speaker-effect'], // Optional, for specific audio profiles
+}
+  await fetchGemini();
+  async function fetchGemini() {
+    const body = {
+      query: queryText,
+      voiceParams: voiceParams,
+      audioConfig: audioConfig,
+    };
+    try {
+        const response = await fetch(cloudFunctionUrl, { // <-- This is your "client" call
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                //'Authorization': `Bearer ${accessToken}` // If you add authentication
+            },
+            body: JSON.stringify(body)
+        });
+      
+      // ... handle response ...
+      const data = await response.json(); // Parse the JSON response
+      const { text, audio, audioMimeType } = data; // Destructure the response
+
+        console.log('Received text from Gemini:', text);
+        // Display the text in your UI
+        geminiOutput.textContent = text;
+
+        if (audio && audioMimeType) {
+            // Decode the Base64 audio string
+          const audioBlob = b64toBlob(audio, audioMimeType);
+          const audioUrl = URL.createObjectURL(audioBlob);
+          // Play the audio
+          const audioPlayer = new Audio(audioUrl);
+          audioPlayer.play();
+          
+            // Optional: Clean up the Blob URL after audio finishes
+          audioPlayer.onended = () => {
+            const playAgain = confirm('Audio finished playing. Do you want to play it again?');
+            if(playAgain) audioPlayer.play();
+            else URL.revokeObjectURL(audioUrl);
+                console.log('Audio played successfully.');
+            };
+            return { text, audioUrl }; // Return both if needed
+        } else {
+            console.warn('No audio data received or MIME type missing.');
+            return text
+        }
+
+    } catch (error) {
+        // ... handle error ...
+    }
+}
+
+};
+
+function b64toBlob(base64: string, mimeType: string): Blob {
+  const byteCharacters = atob(base64);
+  const byteNumbers = new Array(byteCharacters.length).fill(0).map((_, i) => byteCharacters.charCodeAt(i));
+  const byteArray = new Uint8Array(byteNumbers);
+  return new Blob([byteArray], { type: mimeType });
 }
