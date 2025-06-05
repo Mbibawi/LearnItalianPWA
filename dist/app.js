@@ -1,7 +1,7 @@
 "use strict";
 const translationInput = document.getElementById('translationInput');
 const sourceLangSelect = document.getElementById('sourceLanguage');
-const targetlangSelect = document.getElementById('targetLanguage');
+const targetLangSelect = document.getElementById('targetLanguage');
 const repeatCountInput = document.getElementById('repeatCount');
 const voiceRate = document.getElementById('voiceRate');
 const voicePitch = document.getElementById('voicePitch');
@@ -12,6 +12,17 @@ const resultOutput = document.getElementById('translatedResult');
 const geminiInput = document.getElementById('geminiQuery');
 const geminiButton = document.getElementById('askGemini');
 const geminiOutput = document.getElementById('geminiResponse');
+(function initializeFields() {
+    // Load settings from localStorage if available 
+    const settings = localStorage.geminiSettings ? JSON.parse(localStorage.geminiSettings) : null;
+    if (!settings)
+        return;
+    sourceLangSelect.value = settings.sourceLanguage || 'en'; // Default to English
+    targetLangSelect.value = settings.targetLanguage || 'en'; // Default to English
+    repeatCountInput.value = settings.repeatCount || '1'; // Default to 1
+    voiceRate.value = settings.voiceRate || '1'; // Default to normal rate 
+    voiceName.value = settings.voiceName || 'en-US-Standard-A'; // Default voice
+})();
 const apiUrl = 'https://generativeai.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent'; // Or the Gemini API endpoint
 // Replace with your actual client ID and redirect URI
 const CLIENT_ID = '428231091257-9tmnknivkkmmtpei2k0jrrvc4kg4g4jh.apps.googleusercontent.com';
@@ -47,7 +58,7 @@ async function translateAndRepeat() {
     if (!accessToken)
         return console.log('Could not get accessToken');
     const text = translationInput.value;
-    const targetLang = targetlangSelect.value;
+    const targetLang = targetLangSelect.value;
     const sourceLanguage = sourceLangSelect.value;
     const pause = parseInt(pauseDurationInput.value) || 1;
     const count = parseInt(repeatCountInput.value) || 1;
@@ -62,6 +73,7 @@ async function translateAndRepeat() {
     for (const sentence of sentences) {
         await processSentence(sentence.trim());
     }
+    setLocalStorage(); // Save settings to localStorage
     async function processSentence(sentence) {
         const translation = await translateUsingGoogleFunction(accessToken, sentence, sourceLanguage, targetLang);
         if (!translation)
@@ -146,7 +158,7 @@ async function askGemini() {
     const cloudFunctionUrl = 'https://gemini-proxy-428231091257.europe-west1.run.app/generate-audio-content';
     // const accessToken = await getAccessToken();
     const queryText = geminiInput.value.trim();
-    let lang = targetlangSelect.options[targetlangSelect.selectedIndex].value || 'en'; // Default to Italian if no target language is selected
+    let lang = targetLangSelect.options[targetLangSelect.selectedIndex].value || 'en'; // Default to Italian if no target language is selected
     lang = `${lang.toLowerCase()}-${lang.toUpperCase()}`; // e.g., 'it-IT' for Italian
     const voiceParams = {
         languageCode: lang,
@@ -159,6 +171,8 @@ async function askGemini() {
         //  volumeGainDb: 0.0,  // -96.0 to 16.0 (0.0 is normal)
         // effectsProfileId: ['small-bluetooth-speaker-effect'], // Optional, for specific audio profiles
     };
+    voiceName.value = voiceParams.name; // Set the voice name in the UI;
+    setLocalStorage(); // Save settings to localStorage
     try {
         await fetchGemini();
     }
@@ -166,6 +180,7 @@ async function askGemini() {
         console.log('Error fetching Gemini Query: ', error);
     }
     async function fetchGemini() {
+        geminiOutput.textContent = '';
         const body = {
             query: queryText,
             voiceParams: voiceParams,
@@ -204,7 +219,7 @@ async function askGemini() {
         async function playSentence({ text, audio }) {
             console.log('Received text from Gemini:', text);
             // Display the text in the UI
-            geminiOutput.textContent = text;
+            geminiOutput.textContent = `${geminiOutput.textContent}\n${text}`;
             if (!audio || !audioMimeType) {
                 console.warn('No audio data received or MIME type missing.');
                 return text;
@@ -235,5 +250,18 @@ function b64toBlob(base64, mimeType) {
     const byteNumbers = new Array(byteCharacters.length).fill(0).map((_, i) => byteCharacters.charCodeAt(i));
     const byteArray = new Uint8Array(byteNumbers);
     return new Blob([byteArray], { type: mimeType });
+}
+function setLocalStorage() {
+    const values = {
+        sourceLanguage: sourceLangSelect.value,
+        targetlanguage: targetLangSelect.value,
+        repeatCount: repeatCountInput.value,
+        voiceRate: voiceRate.value,
+        voicePitch: voicePitch.value,
+        pauseDuration: pauseDurationInput.value,
+        voiceName: voiceName.value,
+    };
+    localStorage.geminiSettings = JSON.stringify(values);
+    console.log('Settings saved to localStorage:', values);
 }
 //# sourceMappingURL=app.js.map
