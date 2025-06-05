@@ -20,9 +20,10 @@ const geminiOutput = document.getElementById('geminiResponse') as HTMLDivElement
   if (!settings) return;
   sourceLangSelect.value = settings.sourceLanguage || 'en'; // Default to English
   targetLangSelect.value = settings.targetLanguage || 'en'; // Default to English
+  pauseDurationInput.value = settings.pauseDuration || '1'; // Default to 1 second
   repeatCountInput.value = settings.repeatCount || '1'; // Default to 1
   voiceRate.value = settings.voiceRate || '1'; // Default to normal rate 
-  voiceName.value = settings.voiceName || 'en-US-Standard-A'; // Default voice
+  voiceName.value = settings.voiceName || ''; // Default voice
 })();
 
 const apiUrl = 'https://generativeai.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent'; // Or the Gemini API endpoint
@@ -182,9 +183,10 @@ async function askGemini() {
   const queryText = geminiInput.value.trim();
   let lang = targetLangSelect.options[targetLangSelect.selectedIndex].value || 'en'; // Default to Italian if no target language is selected
   lang = `${lang.toLowerCase()}-${lang.toUpperCase()}`; // e.g., 'it-IT' for Italian
+  let name = voiceName.value; // Default to English if no voice is selected
   const voiceParams = {
     languageCode: lang,
-    name: prompt('Provide the voice name', `${lang}-Standard-E`) || `${lang}-Standard-E`, // Example standard voice
+    name: name || prompt('Provide the voice name', `${lang}-Standard-E`) || `${lang}-Standard-E`, // Example standard voice
   };
   const audioConfig = {
     audioEncoding: 'MP3',// Or 'LINEAR16' for uncompressed WAV
@@ -197,7 +199,7 @@ async function askGemini() {
   voiceName.value = voiceParams.name; // Set the voice name in the UI;
   
   setLocalStorage(); // Save settings to localStorage
-  
+
   try {
     await fetchGemini();
   } catch (error) {
