@@ -128,6 +128,7 @@ async function getAccessToken(prompt:boolean = false): Promise<string> {
     type token = { access_token?: string; error?: string; error_description?: string }
     // Initialize the Google Sign-In client
     try {
+      //@ts-expect-error
       const client = google.accounts.oauth2.initTokenClient({
         client_id: CLIENT_ID,
         scope: 'openid profile email', // Adjust scopes as needed
@@ -181,16 +182,21 @@ async function askGemini() {
    // pitch: voicePitch.valueAsNumber || 1.0,  // -20.0 to 20.0 (0.0 is normal)
   //  volumeGainDb: 0.0,  // -96.0 to 16.0 (0.0 is normal)
    // effectsProfileId: ['small-bluetooth-speaker-effect'], // Optional, for specific audio profiles
-}
-  await fetchGemini();
+  }
+  
+  try {
+    await fetchGemini();
+  } catch (error) {
+    console.log('Error fetching Gemini Query: ', error)
+  }
+
   async function fetchGemini() {
-    const body = {
-      query: queryText,
-      voiceParams: voiceParams,
-      audioConfig: audioConfig,
-    };
-    try {
-        const response = await fetch(cloudFunctionUrl, { // <-- This is your "client" call
+      const body = {
+        query: queryText,
+        voiceParams: voiceParams,
+        audioConfig: audioConfig,
+      };
+      const response = await fetch(cloudFunctionUrl, { // <-- This is your "client" call
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -206,6 +212,7 @@ async function askGemini() {
       type sentence = { text: string; audio: string };
       const pause = parseInt(pauseDurationInput.value) || 1;
       const repeatCount = parseInt(repeatCountInput.value) || 1;
+      const repeat = Array(repeatCount).fill(0).map((_,i)=>i); // Create an array to repeat the audio
           // If there's an existing player, stop it before creating a new one
         if (currentAudioPlayer) {
           currentAudioPlayer.pause();
@@ -215,9 +222,10 @@ async function askGemini() {
       const audioPlayer = new Audio();
       currentAudioPlayer = audioPlayer; // Store the reference
       
-      return sentences.map((sentence:sentence) => playSentence(sentence));
-      
-      function playSentence({text, audio}:sentence) {
+    return sentences.map(async (sentence: sentence) => await playSentence(sentence));
+    
+
+    async function playSentence({text, audio}:sentence) {
         console.log('Received text from Gemini:', text);
         // Display the text in the UI
         geminiOutput.textContent = text;
@@ -230,29 +238,24 @@ async function askGemini() {
           // Decode the Base64 audio string
           const audioBlob = b64toBlob(audio, audioMimeType);
           const audioUrl = URL.createObjectURL(audioBlob);
-          // Create the new audio player
-          audioPlayer.src = audioUrl; // Set the source to the blob URL
-          // Play the audio
-          playAudio();
-          console.log('Audio played successfully.');
+        // Create the new audio player
+        audioPlayer.src = audioUrl;
+        
+        for (const play of repeat) { 
+          audioPlayer.currentTime = 0; // Reset to start
+          await audioPlayer.play();
+          if (play !== repeat[repeat.length - 1]) await delay(Math.floor(pause) * 1000);
+        }
+        console.log('Audio played successfully.');
           URL.revokeObjectURL(audioUrl);
           return { text, audioUrl }; // Return both if needed
-      }
-      
-        function playAudio() {
-          for (let i = 0; i <= repeatCount; i++) {
-              setTimeout(() => {
-                  audioPlayer.currentTime = 0; // Reset to start
-                  audioPlayer.play();
-                }, (pause + 1) * 1000 * i); // Pause before each repeat
-              } 
-        }
-
-    } catch (error) {
-        // ... handle error ...
     }
-}
-
+        
+  }
+  function delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+    
 };
 
 function b64toBlob(base64: string, mimeType: string): Blob {
