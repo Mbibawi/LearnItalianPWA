@@ -197,8 +197,9 @@ async function askGemini() {
         currentAudioPlayer = audioPlayer; // Store the reference
         const results = [];
         for (const sentence of sentences) {
-            results.push(await playSentence(sentence));
+            results.push(await playSentence(sentence)); // Collect results
         }
+        ;
         return results;
         async function playSentence({ text, audio }) {
             console.log('Received text from Gemini:', text);
@@ -217,8 +218,7 @@ async function askGemini() {
             for (const play of repeat) {
                 audioPlayer.currentTime = 0; // Reset to start
                 await audioPlayer.play();
-                if (play !== repeat[repeat.length - 1])
-                    await delay(Math.floor(pause) * 1000);
+                await delay(Math.floor(pause) * 1000);
             }
             console.log('Audio played successfully.');
             URL.revokeObjectURL(audioUrl);
