@@ -144,10 +144,11 @@ async function askGemini() {
     const cloudFunctionUrl = 'https://gemini-proxy-428231091257.europe-west1.run.app/generate-audio-content';
     // const accessToken = await getAccessToken();
     const queryText = geminiInput.value.trim();
-    const lang = targetlangSelect.value || 'en'; // Default to Italian if no target language is selected
+    let lang = targetlangSelect.value || 'en'; // Default to Italian if no target language is selected
+    lang = `${lang.toLowerCase()}-${lang.toUpperCase()}`; // e.g., 'it-IT' for Italian
     const voiceParams = {
-        languageCode: `${lang.toLowerCase()}-${lang.toUpperCase()}`, // e.g., 'it-IT' for Italian
-        name: prompt('Provide the voice name', 'en-US-Standard-E') || 'en-US-Standard-E', // Example standard voice
+        languageCode: lang,
+        name: prompt('Provide the voice name', `${lang}-Standard-E`) || `${lang}-Standard-E`, // Example standard voice
     };
     const audioConfig = {
         audioEncoding: 'MP3', // Or 'LINEAR16' for uncompressed WAV
