@@ -226,7 +226,7 @@ async function askGemini() {
           const pause = parseInt(pauseDurationInput.value) || 1;
           const repeatCount = parseInt(repeatCountInput.value) || 1;
           playAudio();
-          
+
           function playAudio() {
             for (let i = 0; i <= repeatCount; i++) {
                 setTimeout(() => {
@@ -234,8 +234,9 @@ async function askGemini() {
                     audioPlayer.play();
                 }, (pause + 1) * 1000 * i); // Pause before each repeat
             } 
+            
             if (confirm('Do you want to play the audio again?')) playAudio();
-
+            
             URL.revokeObjectURL(audioUrl);
               console.log('Audio played successfully.');
             
