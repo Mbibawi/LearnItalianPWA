@@ -206,12 +206,19 @@ async function askGemini() {
         const repeat = Array(repeatCount).fill(0).map((_, i) => i); // Create an array to repeat the audio
         // If there's an existing player, stop it before creating a new one
         if (currentAudioPlayer) {
-            currentAudioPlayer.pause();
-            currentAudioPlayer.currentTime = 0; // Rewind
-            URL.revokeObjectURL(currentAudioPlayer.src); // Revoke old URL
+            // currentAudioPlayer.pause();
+            // currentAudioPlayer.currentTime = 0; // Rewind
+            //URL.revokeObjectURL(currentAudioPlayer.src); // Revoke old URL
         }
-        const audioPlayer = new Audio();
-        currentAudioPlayer = audioPlayer; // Store the reference
+        //const audioPlayer = new Audio();
+        //currentAudioPlayer = audioPlayer; // Store the reference
+        const player = document.getElementById('audioPlayer') || document.createElement('audio'); // Create or get the audio player
+        player.id = 'audioPlayer';
+        player.src = ''; // Clear the source initially
+        player.style.display = 'block'; // Ensure the audio player is visible
+        player.controls = true; // Enable controls for the audio player
+        player.autoplay = false; // Disable autoplay
+        geminiOutput.insertAdjacentElement('beforebegin', player); // Insert the audio player before the output div
         const results = [];
         for (const sentence of sentences) {
             results.push(await playSentence(sentence)); // Collect results
@@ -231,14 +238,16 @@ async function askGemini() {
             const audioBlob = b64toBlob(audio, audioMimeType);
             const audioUrl = URL.createObjectURL(audioBlob);
             // Create the new audio player
-            audioPlayer.src = audioUrl;
+            //audioPlayer.src = audioUrl;
+            player.src = audioUrl;
             for (const play of repeat) {
-                audioPlayer.currentTime = 0; // Reset to start
-                await audioPlayer.play();
+                //audioPlayer.currentTime = 0; // Reset to start
+                player.currentTime = 0; // Reset to start
+                //await audioPlayer.play();
+                await player.play();
                 await delay(Math.floor(pause) * 1000);
             }
             console.log('Audio played successfully.');
-            URL.revokeObjectURL(audioUrl);
             return { text, audioUrl }; // Return both if needed
         }
     }

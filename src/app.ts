@@ -36,10 +36,10 @@ const API_SCOPE = 'https://www.googleapis.com/auth/cloud-platform'; // Or the sp
 let currentAudioPlayer: HTMLAudioElement;
 
 // Gemini query handler
-geminiButton.onclick = async () =>await askGemini();
+geminiButton.onclick = async () => await askGemini();
 translateButton.onclick = translateAndRepeat;
-  
-async function translateUsingGoogleFunction(accessToken: string, text: string, sourceLanguage:string, targetLanguage: string): Promise<string> {
+
+async function translateUsingGoogleFunction(accessToken: string, text: string, sourceLanguage: string, targetLanguage: string): Promise<string> {
   const body = {
     text: text,
     targetLanguage: targetLanguage || 'it', // Default to Italian if no target language is provided
@@ -72,7 +72,7 @@ async function translateAndRepeat() {
   const pause = parseInt(pauseDurationInput.value) || 1;
   const count = parseInt(repeatCountInput.value) || 1;
   if (!text || !targetLang || !sourceLanguage) return;
-  
+
   resultOutput.textContent = 'Translating with Gemini...';
   //const translation = await translateText(accessToken, text, targetLang);
 
@@ -82,10 +82,10 @@ async function translateAndRepeat() {
   const voice = getVoice(); // Get the selected voice
   const sentences = text.split('//');
 
-  for (const sentence of sentences) { 
+  for (const sentence of sentences) {
     await processSentence(sentence.trim())
   }
-  
+
   setLocalStorage(); // Save settings to localStorage
 
   async function processSentence(sentence: string) {
@@ -100,17 +100,17 @@ async function translateAndRepeat() {
     const voice = voiceName.value;
     const voices = speechSynthesis.getVoices();
     return voices.find(v => v.name === voice)
-    }
-    
-  
+  }
+
+
 }
 
 // Repetition logic with pause
-async function repeatText(text: string, lang:string, count: number, pause: number, voice:SpeechSynthesisVoice | undefined, rate:number = 1, pitch:number = 1) {
-    for (let i = 0; i < count; i++) {
-      speak(text, lang, voice, rate, pitch); // Speak the text with default rate and pitch
-      await new Promise(resolve => setTimeout(resolve, (pause + 1) * 1000));
-    }
+async function repeatText(text: string, lang: string, count: number, pause: number, voice: SpeechSynthesisVoice | undefined, rate: number = 1, pitch: number = 1) {
+  for (let i = 0; i < count; i++) {
+    speak(text, lang, voice, rate, pitch); // Speak the text with default rate and pitch
+    await new Promise(resolve => setTimeout(resolve, (pause + 1) * 1000));
+  }
 }
 
 // Speak text using SpeechSynthesis API
@@ -120,19 +120,19 @@ function speak(text: string, lang: string, voice?: SpeechSynthesisVoice, rate: n
   utterance.pitch = pitch; // Set the pitch for the utterance
   utterance.rate = rate; // Set the speaking rate
 
-    if (voice) {
-      utterance.voice = voice;
-    } else {
-      console.log(`Voice "${voiceName}" not found. Using default voice.`);
-    }
-  
+  if (voice) {
+    utterance.voice = voice;
+  } else {
+    console.log(`Voice "${voiceName}" not found. Using default voice.`);
+  }
+
   speechSynthesis.speak(utterance);
 }
 
-async function getAccessToken(prompt:boolean = false): Promise<string> {
+async function getAccessToken(prompt: boolean = false): Promise<string> {
   return new Promise((resolve, reject) => {
     // Ensure that CLIENT_ID and REDIRECT_URI are defined elsewhere in your code
-    if (!CLIENT_ID ||! REDIRECT_URI) {
+    if (!CLIENT_ID || !REDIRECT_URI) {
       reject(new Error('CLIENT_ID or REDIRECT_URI is not defined.'));
       return;
     }
@@ -148,8 +148,8 @@ async function getAccessToken(prompt:boolean = false): Promise<string> {
           if (tokenResponse && tokenResponse.access_token) {
             resolve(tokenResponse.access_token);
           } else {
-              // Determine if user interaction is needed
-              const requiresInteraction = tokenResponse.error === 'consent_required' || tokenResponse.error === 'login_required' || tokenResponse.error === 'interaction_required';
+            // Determine if user interaction is needed
+            const requiresInteraction = tokenResponse.error === 'consent_required' || tokenResponse.error === 'login_required' || tokenResponse.error === 'interaction_required';
 
             // Handle errors from silent attempt
             if (requiresInteraction) {
@@ -161,7 +161,7 @@ async function getAccessToken(prompt:boolean = false): Promise<string> {
 
               if (confirm("Silent token acquisition failed. User interaction needed. Do you agree to manually login to your google account?")) getAccessToken(true);
               else reject(new Error(`Failed to retrieve access token: ${tokenResponse.error || 'Unknown error'}`));
-            
+
             }
           }
         },
@@ -172,14 +172,14 @@ async function getAccessToken(prompt:boolean = false): Promise<string> {
       //if (!prompt) client.requestAccessToken({ prompt: 'none' });
       //else client.requestAccessToken();
     } catch (error: any) {
-        reject(new Error('User interaction required for token acquisition.'));
+      reject(new Error('User interaction required for token acquisition.'));
     }
   });
 }
 
 async function askGemini() {
   const cloudFunctionUrl = 'https://gemini-proxy-428231091257.europe-west1.run.app/generate-audio-content';
- // const accessToken = await getAccessToken();
+  // const accessToken = await getAccessToken();
   const queryText = geminiInput.value.trim();
   let lang = targetLangSelect.options[targetLangSelect.selectedIndex].value || 'en'; // Default to Italian if no target language is selected
   lang = `${lang.toLowerCase()}-${lang.toUpperCase()}`; // e.g., 'it-IT' for Italian
@@ -191,13 +191,13 @@ async function askGemini() {
   const audioConfig = {
     audioEncoding: 'MP3',// Or 'LINEAR16' for uncompressed WAV
     speakingRate: voiceRate.valueAsNumber || 1.0,  // 0.25 to 4.0 (1.0 is normal)
-   // pitch: voicePitch.valueAsNumber || 1.0,  // -20.0 to 20.0 (0.0 is normal)
-  //  volumeGainDb: 0.0,  // -96.0 to 16.0 (0.0 is normal)
-   // effectsProfileId: ['small-bluetooth-speaker-effect'], // Optional, for specific audio profiles
+    // pitch: voicePitch.valueAsNumber || 1.0,  // -20.0 to 20.0 (0.0 is normal)
+    //  volumeGainDb: 0.0,  // -96.0 to 16.0 (0.0 is normal)
+    // effectsProfileId: ['small-bluetooth-speaker-effect'], // Optional, for specific audio profiles
   }
 
   voiceName.value = voiceParams.name; // Set the voice name in the UI;
-  
+
   setLocalStorage(); // Save settings to localStorage
 
   try {
@@ -205,40 +205,48 @@ async function askGemini() {
   } catch (error) {
     console.log('Error fetching Gemini Query: ', error)
   }
-  
+
 
   async function fetchGemini() {
     geminiOutput.textContent = '';
-      const body = {
-        query: queryText,
-        voiceParams: voiceParams,
-        audioConfig: audioConfig,
-      };
-      const response = await fetch(cloudFunctionUrl, { // <-- This is your "client" call
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                //'Authorization': `Bearer ${accessToken}` // If you add authentication
-            },
-            body: JSON.stringify(body)
-        });
-      
-      // ... handle response ...
-      const data = await response.json(); // Parse the JSON response
-      const { sentences, audioMimeType } = data; // Destructure the response
-      if (!sentences) throw new Error('No sentences received from Gemini API');
-      type sentence = { text: string; audio: string };
-      const pause = parseInt(pauseDurationInput.value) || 1;
-      const repeatCount = parseInt(repeatCountInput.value) || 1;
-      const repeat = Array(repeatCount).fill(0).map((_,i)=>i); // Create an array to repeat the audio
-          // If there's an existing player, stop it before creating a new one
-        if (currentAudioPlayer) {
-          currentAudioPlayer.pause();
-          currentAudioPlayer.currentTime = 0; // Rewind
-          URL.revokeObjectURL(currentAudioPlayer.src); // Revoke old URL
-      }
-      const audioPlayer = new Audio();
-      currentAudioPlayer = audioPlayer; // Store the reference
+    const body = {
+      query: queryText,
+      voiceParams: voiceParams,
+      audioConfig: audioConfig,
+    };
+    const response = await fetch(cloudFunctionUrl, { // <-- This is your "client" call
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        //'Authorization': `Bearer ${accessToken}` // If you add authentication
+      },
+      body: JSON.stringify(body)
+    });
+
+    // ... handle response ...
+    const data = await response.json(); // Parse the JSON response
+    const { sentences, audioMimeType } = data; // Destructure the response
+    if (!sentences) throw new Error('No sentences received from Gemini API');
+    type sentence = { text: string; audio: string };
+    const pause = parseInt(pauseDurationInput.value) || 1;
+    const repeatCount = parseInt(repeatCountInput.value) || 1;
+    const repeat = Array(repeatCount).fill(0).map((_, i) => i); // Create an array to repeat the audio
+    // If there's an existing player, stop it before creating a new one
+    if (currentAudioPlayer) {
+      // currentAudioPlayer.pause();
+      // currentAudioPlayer.currentTime = 0; // Rewind
+      //URL.revokeObjectURL(currentAudioPlayer.src); // Revoke old URL
+    }
+    //const audioPlayer = new Audio();
+    //currentAudioPlayer = audioPlayer; // Store the reference
+    const player = document.getElementById('audioPlayer') as HTMLAudioElement || document.createElement('audio'); // Create or get the audio player
+    player.id = 'audioPlayer';
+    player.src = ''; // Clear the source initially
+    player.style.display = 'block'; // Ensure the audio player is visible
+    player.controls = true; // Enable controls for the audio player
+    player.autoplay = false; // Disable autoplay
+
+    geminiOutput.insertAdjacentElement('beforebegin', player); // Insert the audio player before the output div
     const results = [];
 
     for (const sentence of sentences) {
@@ -246,39 +254,42 @@ async function askGemini() {
     };
 
     return results;
-  
-    async function playSentence({text, audio}:sentence) {
-        console.log('Received text from Gemini:', text);
-        // Display the text in the UI
-        geminiOutput.textContent = `${geminiOutput.textContent}\n${text}`;
 
-        if (!audio || !audioMimeType) {
-          console.warn('No audio data received or MIME type missing.');
-          return text
-        };
+    async function playSentence({ text, audio }: sentence) {
+      console.log('Received text from Gemini:', text);
+      // Display the text in the UI
+      geminiOutput.textContent = `${geminiOutput.textContent}\n${text}`;
 
-          // Decode the Base64 audio string
-          const audioBlob = b64toBlob(audio, audioMimeType);
-          const audioUrl = URL.createObjectURL(audioBlob);
-        // Create the new audio player
-        audioPlayer.src = audioUrl;
-        
-        for (const play of repeat) { 
-          audioPlayer.currentTime = 0; // Reset to start
-          await audioPlayer.play();
-          await delay(Math.floor(pause) * 1000);
-        }
-        console.log('Audio played successfully.');
-          URL.revokeObjectURL(audioUrl);
-          return { text, audioUrl }; // Return both if needed
+      if (!audio || !audioMimeType) {
+        console.warn('No audio data received or MIME type missing.');
+        return text
+      };
+
+      // Decode the Base64 audio string
+      const audioBlob = b64toBlob(audio, audioMimeType);
+      const audioUrl = URL.createObjectURL(audioBlob);
+      // Create the new audio player
+      //audioPlayer.src = audioUrl;
+      player.src = audioUrl;
+
+
+      for (const play of repeat) {
+        //audioPlayer.currentTime = 0; // Reset to start
+        player.currentTime = 0; // Reset to start
+        //await audioPlayer.play();
+        await player.play();
+        await delay(Math.floor(pause) * 1000);
+      }
+      console.log('Audio played successfully.');
+      return { text, audioUrl }; // Return both if needed
     }
-        
+
   }
 
   function delay(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
-    
+
 };
 
 function b64toBlob(base64: string, mimeType: string): Blob {
