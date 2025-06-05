@@ -151,8 +151,8 @@ async function askGemini() {
     };
     const audioConfig = {
         audioEncoding: 'MP3', // Or 'LINEAR16' for uncompressed WAV
-        speakingRate: voiceRate.value, // 0.25 to 4.0 (1.0 is normal)
-        pitch: voicePitch.value, // -20.0 to 20.0 (0.0 is normal)
+        speakingRate: voiceRate.valueAsNumber || 1.0, // 0.25 to 4.0 (1.0 is normal)
+        pitch: voicePitch.valueAsNumber || 1.0, // -20.0 to 20.0 (0.0 is normal)
         volumeGainDb: 0.0, // -96.0 to 16.0 (0.0 is normal)
         effectsProfileId: ['small-bluetooth-speaker-effect'], // Optional, for specific audio profiles
     };
