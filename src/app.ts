@@ -216,10 +216,17 @@ async function askGemini() {
           
             // Optional: Clean up the Blob URL after audio finishes
           audioPlayer.onended = () => {
-            const playAgain = confirm('Audio finished playing. Do you want to play it again?');
-            if(playAgain) audioPlayer.play();
-            else URL.revokeObjectURL(audioUrl);
-                console.log('Audio played successfully.');
+            const pause = parseInt(pauseDurationInput.value) || 1;
+            const repeatCount = parseInt(repeatCountInput.value) || 1;
+            for (let i = 0; i <= repeatCount; i++) {
+                setTimeout(() => {
+                    audioPlayer.currentTime = 0; // Reset to start
+                    audioPlayer.play();
+                }, (pause + 1) * 1000 * i); // Pause before each repeat
+            } 
+            
+            URL.revokeObjectURL(audioUrl);
+              console.log('Audio played successfully.');
             };
             return { text, audioUrl }; // Return both if needed
         } else {
