@@ -166,7 +166,7 @@ async function getAccessToken(prompt:boolean = false): Promise<string> {
 
 async function askGemini() {
   const cloudFunctionUrl = 'https://gemini-proxy-428231091257.europe-west1.run.app/generate-audio-content';
-  const accessToken = await getAccessToken();
+ // const accessToken = await getAccessToken();
   const queryText = geminiInput.value.trim();
   const voiceParams = {
     languageCode: 'en-US',
