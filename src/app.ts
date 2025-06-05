@@ -201,51 +201,51 @@ async function askGemini() {
       
       // ... handle response ...
       const data = await response.json(); // Parse the JSON response
-      const { text, audio, audioMimeType } = data; // Destructure the response
-
+      const { sentences, audioMimeType } = data; // Destructure the response
+      if (!sentences) throw new Error('No sentences received from Gemini API');
+      type sentence = { text: string; audio: string };
+      const pause = parseInt(pauseDurationInput.value) || 1;
+      const repeatCount = parseInt(repeatCountInput.value) || 1;
+          // If there's an existing player, stop it before creating a new one
+        if (currentAudioPlayer) {
+          currentAudioPlayer.pause();
+          currentAudioPlayer.currentTime = 0; // Rewind
+          URL.revokeObjectURL(currentAudioPlayer.src); // Revoke old URL
+      }
+      const audioPlayer = new Audio();
+      currentAudioPlayer = audioPlayer; // Store the reference
+      
+      return sentences.map((sentence:sentence) => playSentence(sentence));
+      
+      function playSentence({text, audio}:sentence) {
         console.log('Received text from Gemini:', text);
-        // Display the text in your UI
+        // Display the text in the UI
         geminiOutput.textContent = text;
 
-        if (audio && audioMimeType) {
-            // Decode the Base64 audio string
+        if (!audio || !audioMimeType) {
+          console.warn('No audio data received or MIME type missing.');
+          return text
+        };
+
+          // Decode the Base64 audio string
           const audioBlob = b64toBlob(audio, audioMimeType);
           const audioUrl = URL.createObjectURL(audioBlob);
-          
-          // If there's an existing player, stop it before creating a new one
-          if (currentAudioPlayer) {
-            currentAudioPlayer.pause();
-            currentAudioPlayer.currentTime = 0; // Rewind
-            URL.revokeObjectURL(currentAudioPlayer.src); // Revoke old URL
-          }
-          
           // Create the new audio player
-          const audioPlayer = new Audio(audioUrl);
+          audioPlayer.src = audioUrl; // Set the source to the blob URL
           // Play the audio
-          currentAudioPlayer = audioPlayer; // Store the reference
-          const pause = parseInt(pauseDurationInput.value) || 1;
-          const repeatCount = parseInt(repeatCountInput.value) || 1;
           playAudio();
-
-          function playAudio() {
-            for (let i = 0; i <= repeatCount; i++) {
-                setTimeout(() => {
-                    audioPlayer.currentTime = 0; // Reset to start
-                    audioPlayer.play();
+          console.log('Audio played successfully.');
+          URL.revokeObjectURL(audioUrl);
+          return { text, audioUrl }; // Return both if needed
+      }
+      
+        function playAudio() {
+          for (let i = 0; i <= repeatCount; i++) {
+              setTimeout(() => {
+                  audioPlayer.currentTime = 0; // Reset to start
+                  audioPlayer.play();
                 }, (pause + 1) * 1000 * i); // Pause before each repeat
-            } 
-            
-            if (confirm('Do you want to play the audio again?')) playAudio();
-            
-            URL.revokeObjectURL(audioUrl);
-              console.log('Audio played successfully.');
-            
-          }
-
-            return { text, audioUrl }; // Return both if needed
-        } else {
-            console.warn('No audio data received or MIME type missing.');
-            return text
+              } 
         }
 
     } catch (error) {
