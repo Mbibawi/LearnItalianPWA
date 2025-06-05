@@ -20,6 +20,8 @@ button {
   margin-top: 1rem;
 }
 div.output {
+  white-space: pre-wrap;
+  line-height: 12pt;
   min-height: 3rem;
   background: #f0f0f0;
   padding: 0.5rem;
