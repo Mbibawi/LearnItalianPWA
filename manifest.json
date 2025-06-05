@@ -1,1 +1,13 @@
-{}
+{
+  "start_url": "https://mbibawi.github.io/LearnItalianPWA/",
+  "dir": "auto",
+  "name": "Learn Italian With Gemini",
+  "theme_color": "#000000",
+  "background_color": "#000000",
+  "short_name": "Italian PWA",
+  "description": "Interacts with Gemini API to get translations and phrases. It reads the phrases and lets the user repeat them.",
+  "lang": "en",
+  "categories": [
+    "education"
+  ]
+}
