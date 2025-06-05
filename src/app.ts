@@ -168,14 +168,15 @@ async function askGemini() {
   const cloudFunctionUrl = 'https://gemini-proxy-428231091257.europe-west1.run.app/generate-audio-content';
  // const accessToken = await getAccessToken();
   const queryText = geminiInput.value.trim();
+  const lang = targetlangSelect.value || 'en'; // Default to Italian if no target language is selected
+  translationInput.value = 'en-US-Standard-E';
   const voiceParams = {
-    languageCode: 'en-US',
-    name: 'en-US-Standard-E', // Example standard voice
-    ssmlGender: 'MALE',
+    languageCode: `${lang.toLowerCase()}-${lang.toUpperCase()}`, // e.g., 'it-IT' for Italian
+    name: translationInput.value, // Example standard voice
   };
   const audioConfig = {
     audioEncoding: 'MP3',// Or 'LINEAR16' for uncompressed WAV
-    //speakingRate: voiceRate.valueAsNumber || 1.0,  // 0.25 to 4.0 (1.0 is normal)
+    speakingRate: voiceRate.valueAsNumber || 1.0,  // 0.25 to 4.0 (1.0 is normal)
    // pitch: voicePitch.valueAsNumber || 1.0,  // -20.0 to 20.0 (0.0 is normal)
   //  volumeGainDb: 0.0,  // -96.0 to 16.0 (0.0 is normal)
    // effectsProfileId: ['small-bluetooth-speaker-effect'], // Optional, for specific audio profiles
