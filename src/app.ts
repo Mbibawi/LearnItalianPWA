@@ -175,9 +175,41 @@ async function askGemini(): Promise<void | any[]> {
   
   geminiOutput.textContent = "";
 
+  response.text = removeSsmlMarkup(response.text);
+
   SENTENCES = [response];
   await playSentences([response], 1, 0, false);  
 }
+
+/**
+ * Removes SSML tags and decodes HTML entities using the browser's DOM parser.
+ * This is generally the simplest and most robust method for unescaping entities in a browser.
+ *
+ * @param ssmlText The input string potentially containing SSML markup and HTML entities.
+ * @returns The string with SSML tags removed and HTML entities decoded.
+ */
+function removeSsmlMarkup(ssmlText: string): string {
+  if (!ssmlText) return '';
+  
+
+  // 1. Remove SSML tags using regex
+  // This part remains the same as regex is efficient for tag removal.
+  let cleanText = ssmlText.replace(/<[^>]+>/g, '');
+
+  // 2. Decode HTML entities using a temporary DOM element
+  const doc = new DOMParser().parseFromString(cleanText, 'text/html');
+  cleanText = doc.documentElement.textContent || '';
+  // Alternatively, for simpler cases, one could create a detached div:
+  // const div = document.createElement('div');
+  // div.innerHTML = cleanText;
+  // cleanText = div.textContent || '';
+
+  // Optional: Normalize whitespace
+  cleanText = cleanText.trim().replace(/\s+/g, ' ');
+
+  return cleanText;
+}
+
 
 /**
  * Retrieves the access token for Google APIs.
