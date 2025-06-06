@@ -5,17 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" type="text/css" href="styles.css">
   <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <title>Learn Italian With Gemini</title>
 </head>
 <body>
   <h1>Gemini Translation PWA</h1>
   
-  <section id="translationSection">
-    <h2>Translate Text</h2>
-    <div>
-      <label for="translationInput">Text to translate:</label>
-      <textarea id="translationInput" placeholder="Enter text in French or English" rows="4" cols="50"></textarea>
-    </div>
+  <section id="settingsSection">
+    <h2>Language and voice parameters</h2>
     <div>
       <label for="sourceLanguage">Source language:</label>
       <select id="sourceLanguage" aria-label="Select source language">
@@ -57,60 +54,7 @@
     <div>
       <label for="voiceName">Chose the Voice:</label>
       <select id="voiceName"Voice Name="Select Voice">
-        <option value="it-IT-Standard-A">Gemini Italian Standard Female</option>
-        <option value="it-IT-Standard-B">Gemini Italian Standard Female</option>
-        <option value="it-IT-Standard-E">Gemini Italian Standard Female</option>
-        <option value="it-IT-Standard-C">Gemini Italian Standard Male</option>
-        <option value="it-IT-Standard-D">Gemini Italian Standard Male</option>
-        <option value="it-IT-Standard-F">Gemini Italian Standard Male</option>
-        <option value="Google italiano">Google Italian</option>
-        <option value="Microsoft Cosimo">Microsoft Italian Cosimo</option>
-        <option value="Microsoft Elsa">Microsoft Italian Elsa</option>
-        <option value="fr-FR-Standard-A">Gemini French Standard Female</option>
-        <option value="fr-FR-Standard-C">Gemini French Standard Female</option>
-        <option value="fr-FR-Standard-F">Gemini French Standard Female</option>
-        <option value="fr-FR-Standard-E">Gemini French Standard Female</option>
-        <option value="fr-FR-Standard-B">Gemini French Standard Male</option>
-        <option value="fr-FR-Standard-D">Gemini French Standard Male</option>
-        <option value="fr-FR-Standard-G">Gemini French Standard Male</option>
-        <option value="Google français">Google French</option>
-        <option value="Microsoft Hortense">Microsoft French Hortesense</option>
-        <option value="Microsoft Julie">Microsot French Julie</option>
-        <option value="Microsoft Paul">Microsoft French Paul</option>
-        <option value="Google español">Google Spanish</option>
-        <option value="Google español de Estados Unidos">Google Spanish (US accent)</option>
-        <option value="en-US-Standard-A">Gemini US Standard Male</option>
-        <option value="en-US-Standard-B">Gemini US Standard Male</option>
-        <option value="en-US-Standard-D">Gemini US Standard Male</option>
-        <option value="en-US-Standard-I">Gemini US Standard Male</option>
-        <option value="en-US-Standard-J">Gemini US Standard Male</option>
-        <option value="en-US-Standard-C">Gemini US Standard Female</option>
-        <option value="en-US-Standard-E">Gemini US Standard Female</option>
-        <option value="en-US-Standard-F">Gemini US Standard Female</option>
-        <option value="en-US-Standard-G">Gemini US Standard Female</option>
-        <option value="en-US-Standard-H">Gemini US Standard Female</option>
-        <option value="en-GB-Standard-A">Gemini UK Standard Female</option>
-        <option value="en-GB-Standard-B">Gemini UK Standard Male</option>
-        <option value="en-GB-Standard-D">Gemini UK Standard Male</option>
-        <option value="en-GB-Standard-O">Gemini UK Standard Male</option>
-        <option value="en-GB-Standard-C">Gemini UK Standard Female</option>
-        <option value="en-GB-Standard-E">Gemini UK Standard Female</option>
-        <option value="en-GB-Standard-F">Gemini UK Standard Female</option>
-        <option value="en-GB-Standard-N">Gemini UK Standard Female</option>
-        <option value="Google UK English Male">Google English UK Male</option>
-        <option value="Google UK English Female">Google English UK Female</option>
-        <option value="Microsoft David">Microsoft English US David</option>
-        <option value="Microsoft Mark">Microsoft English US Mark</option>
-        <option value="Microsoft Zira">Microsoft English US Zira</option>
-        <option value="Google DE German">Google German</option>
-        <!-- Add more languages as needed -->
       </select>
-    </div>
-
-    <button id="translateButton">Translate & Repeat</button>
-    <div>
-      <label>Translation Result:</label>
-      <div id="translatedResult" class="output" aria-live="polite"></div>
     </div>
   </section>
 
@@ -120,7 +64,8 @@
       <label for="geminiQuery">Your question or prompt:</label>
       <textarea id="geminiQuery" placeholder="Ask Gemini anything..." rows="4" cols="50"></textarea>
     </div>
-    <button id="askGemini">Send to Gemini</button>
+    <button id="getSentences">Get Sentences</button>
+    <button id="askGemini">Ask Gemini</button>
     <div>
       <label>Gemini's Response:</label>
       <div id="geminiResponse" class="output" aria-live="polite"></div>   
