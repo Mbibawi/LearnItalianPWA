@@ -184,10 +184,10 @@ async function getSentences() {
 async function playAudio({ text, audio }, repeatCount = 1, pause = 1000, translate = false) {
     console.log('Playing audio for sentence:', text);
     // Display the text in the UI
-    geminiOutput.textContent = `${geminiOutput.textContent}\n${text}`;
+    geminiOutput.textContent = `${geminiOutput.textContent}${text}\n`;
     const translation = await translateSentence(text, "English", translate);
     if (translation)
-        geminiOutput.textContent += ` (English Translation: ${translation})`; // Display the translation if available
+        geminiOutput.textContent = `${geminiOutput.textContent} (English Translation: ${translation}\n)`; // Display the translation if available
     if (!audio)
         return alert('No audio to play.');
     const repeat = Array(repeatCount).fill(0).map((_, i) => i); // Create an array to repeat the audio
