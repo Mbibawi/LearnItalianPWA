@@ -181,7 +181,10 @@ async function playSentences(sentences, repeateCount, pause, translate, recurse 
     ;
     if (recurse)
         return;
-    geminiOutput.ondblclick = () => playSentences(sentences, repeateCount, pause, translate, true); //adding a "on double click" that will allow to repeat the audio again.
+    geminiOutput.ondblclick = () => {
+        geminiOutput.textContent = '';
+        playSentences(sentences, repeateCount, pause, translate, true);
+    }; //adding a "on double click" that will allow to repeat the audio again.
 }
 /**
  * Plays audio for a given text and Base64 encoded audio data.
@@ -276,7 +279,6 @@ async function callCloudFunction(url, query, params) {
         return null;
     }
     async function fetchGemini() {
-        geminiOutput.textContent = '';
         const body = {
             query: query,
             ...params, // Include any additional parameters if needed

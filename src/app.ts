@@ -222,7 +222,10 @@ async function playSentences(sentences: Sentence[], repeateCount: number, pause:
   };
   if (recurse) return;
   
-  geminiOutput.ondblclick = () => playSentences(sentences, repeateCount, pause, translate, true);//adding a "on double click" that will allow to repeat the audio again.
+  geminiOutput.ondblclick = () => {
+    geminiOutput.textContent = '';
+    playSentences(sentences, repeateCount, pause, translate, true)
+  };//adding a "on double click" that will allow to repeat the audio again.
 }
 
 /**
@@ -332,7 +335,6 @@ async function callCloudFunction(url: string, query?:string, params?:{ [key: str
   }
   
   async function fetchGemini() {
-    geminiOutput.textContent = '';
     const body = {
       query: query,
       ...params, // Include any additional parameters if needed
