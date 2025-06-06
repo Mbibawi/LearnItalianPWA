@@ -261,7 +261,7 @@ async function callCloudFunction(url: string, query?:string, params?:{ [key: str
   // const accessToken = await getAccessToken();
   
   if(!query) return alert('Please enter a query to send to Gemini');
-  let lang = targetLangSelect.options[targetLangSelect.selectedIndex].lang; // Default to English if no target language is selected
+  let lang = targetLangSelect.options[targetLangSelect.selectedIndex]?.value; // Default to English if no target language is selected
   if (!lang) return alert('No target language selected. We will exit the function');
   if (!['en', 'fr', 'it', 'ar', 'de'].includes(lang)) return alert('The language must be either "en", "fr", "it", "de" or "ar". We will exit the function');
 

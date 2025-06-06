@@ -210,9 +210,10 @@ async function playAudio({ text, audioBase64 }, repeatCount = 1, pause = 1000) {
  */
 async function callCloudFunction(url, query, params) {
     // const accessToken = await getAccessToken();
+    var _a;
     if (!query)
         return alert('Please enter a query to send to Gemini');
-    let lang = targetLangSelect.options[targetLangSelect.selectedIndex].lang; // Default to English if no target language is selected
+    let lang = (_a = targetLangSelect.options[targetLangSelect.selectedIndex]) === null || _a === void 0 ? void 0 : _a.value; // Default to English if no target language is selected
     if (!lang)
         return alert('No target language selected. We will exit the function');
     if (!['en', 'fr', 'it', 'ar', 'de'].includes(lang))
