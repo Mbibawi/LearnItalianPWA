@@ -132,14 +132,24 @@ async function askGemini(): Promise<void | any[]> {
   const cloudFunctionUrl = 'https://gemini-proxy-428231091257.europe-west1.run.app/api/ask'; 
   //const accessToken = await getAccessToken();
   //if (!accessToken) return console.log('Could not get accessToken');
+  const targetLanguage = '';
+  const sentencesNumber = '';
+  const wordsNumber = '';
+  const query = '';
+
+  const prompt = `Generate ${sentencesNumber} distinct sentences in the ${targetLanguage} language according to the following guidelines or instructions: "${query}". Each sentence should not exceed ${wordsNumber} words long.
+    Return the sentences as a JSON array of strings. For example: ["Sentence one.", "Sentence two."]\nEnsure the output is ONLY the JSON array.`;
+
 
   geminiOutput.textContent = 'Asking Gemini...';
 
-  const data = await callCloudFunction(cloudFunctionUrl); // Call the askGemini function with the cloud function URL
+
+
+  const data = await callCloudFunction(cloudFunctionUrl, prompt); // Call the askGemini function with the cloud function URL
 
   const response:Sentence = data.response;
 
-  if (response) throw new Error('No response received from Gemini API');
+  if (!response) throw new Error('No response received from Gemini API');
   
   geminiOutput.textContent = "";
   
@@ -155,21 +165,22 @@ async function askGemini(): Promise<void | any[]> {
 async function getSentences(){
   const cloudFunctionUrl = 'https://gemini-proxy-428231091257.europe-west1.run.app/api/sentences';
 
-  const sentencesNumber = prompt('How many sentences do you want to get from Gemini? (default is 3)');
+  const number = prompt('How many sentences do you want to get from Gemini? (default is 3)');
 
-  const wordsNumber = prompt('Do you want to set the maximum number of words for each sentence ?');
+  const words = prompt('Do you want to set the maximum number of words for each sentence ?');
+  
+  const targetLanguage = targetLangSelect.textContent || prompt("You must define the target language, otherwise it will be set to \"English\"", "English") || "English";
+    
+  
+  let query = geminiInput.value.trim(); // Get the input query from the text area
 
-  const params = {
-    sourceLanguage: sourceLangSelect.value || '', // Default to English if not selected
-    targetLanguage: targetLangSelect.value || '',
-    sentencesNumber: isNaN(Number(sentencesNumber))?3:Number(sentencesNumber), // Default to 5 sentences if not provided
-    wordsNumber: isNaN(Number(wordsNumber))?10:Number(wordsNumber),
-  }
- 
-  const data = await callCloudFunction(cloudFunctionUrl, params); // Call the askGemini function with the cloud function URL
-
+  query = `Generate ${isNaN(Number(number)) ? 3 : Number(number)} distinct sentences in the ${targetLanguage} language according to the following guidelines or instructions: "${query}". Each sentence should not exceed ${isNaN(Number(words))?10:Number(words)} words long. Return the sentences as a JSON array of strings. For example: ["Sentence one.", "Sentence two."]\nEnsure the output is ONLY the JSON array.`;
+  
+  
+  const data = await callCloudFunction(cloudFunctionUrl, query); // Call the askGemini function with the cloud function URL
+  
   const sentences:Sentence[] = data.sentences; // Extract sentences from the response
-
+  
   if (!data.sentences) throw new Error('No sentences received from Gemini API');
   
   geminiOutput.textContent = "";
@@ -246,17 +257,19 @@ async function playAudio({ text, audioBase64 }: Sentence, repeatCount: number = 
  * @param {Object} [params] - Optional parameters to include in the request body.
  * @returns {Promise<any>} A promise that resolves to the response from the cloud function.
  */
-async function callCloudFunction(url: string, params?:{ [key: string]: any }): Promise<any> {
+async function callCloudFunction(url: string, query?:string, params?:{ [key: string]: any }): Promise<any> {
   // const accessToken = await getAccessToken();
-  const query = geminiInput.value.trim();
+  
   if(!query) return alert('Please enter a query to send to Gemini');
-  let lang = targetLangSelect.options[targetLangSelect.selectedIndex].lang || prompt('You must select a target language'); // Default to Italian if no target language is selected
+  let lang = targetLangSelect.options[targetLangSelect.selectedIndex].lang; // Default to English if no target language is selected
   if (!lang) return alert('No target language selected. We will exit the function');
+  if (!['en', 'fr', 'it', 'ar', 'de'].includes(lang)) return alert('The language must be either "en", "fr", "it", "de" or "ar". We will exit the function');
+
   lang = `${lang.toLowerCase()}-${lang.toUpperCase()}`; // e.g., 'it-IT' for Italian 
   const defaultVoice = voiceName.options[0].value; // Default voice from the first option
   const voiceParams = {
     languageCode: lang,
-    name: voiceName.value || prompt('Provide the voice name', defaultVoice) || defaultVoice, // Example standard voice
+    name: `${lang}-${voiceName.value}` || prompt('Provide the voice name', defaultVoice) || defaultVoice, // Example standard voice
   };
   const audioConfig = {
     audioEncoding: 'MP3',// Or 'LINEAR16' for uncompressed WAV

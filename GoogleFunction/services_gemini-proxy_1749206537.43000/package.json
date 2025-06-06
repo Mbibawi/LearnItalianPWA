@@ -1,0 +1,25 @@
+{
+  "name": "gemini-tts-proxy-function",
+  "version": "1.0.1",
+  "description": "Google Cloud Function to proxy Gemini API requests and integrate Text-to-Speech, with custom routing.",
+  "main": "index.js",
+  "engines": {
+    "node": "20"
+  },
+  "keywords": [
+    "google-cloud-functions",
+    "gemini-api",
+    "text-to-speech",
+    "nodejs",
+    "pwa-backend"
+  ],
+  "author": "Mina BIBAWI",
+  "license": "MIT",
+  "dependencies": {
+    "@google/genai": "^1.1.0",
+    "@google-cloud/text-to-speech": "^6.1.0"
+  },
+  "devDependencies": {
+    "@google-cloud/functions-framework": "^4.0.0"
+  }
+}
