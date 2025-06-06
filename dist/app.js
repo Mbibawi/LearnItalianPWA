@@ -168,7 +168,7 @@ async function getSentences() {
     const pause = parseInt(pauseInput.value) * 1000 || 1000;
     const results = [];
     for (const sentence of sentences) {
-        results.push(await playAudio(sentence, repeatCount, pause)); // Collect results
+        results.push(await playAudio(sentence, repeatCount, pause, true)); // Collect results
     }
     ;
 }
