@@ -78,6 +78,15 @@ sendQueryBtn.onclick = askGemini;
     text: string; name: string; lang: string};
   const voices: Option[] = [
     // English (US)
+    { text: "English (US) (Male)", name: "US-Neural2-A", lang:"EN" },
+    { text: "English (US) (Female)", name: "US-Neural2-C", lang:"EN" },
+    { text: "English (US) (Male)", name: "US-Neural2-D", lang:"EN" },
+    { text: "English (US) (Female)", name: "US-Neural2-E", lang:"EN" },
+    { text: "English (US) (Female)", name: "US-Neural2-F", lang:"EN" },
+    { text: "English (US) (Female)", name: "US-Neural2-G", lang:"EN" },
+    { text: "English (US) (Female)", name: "US-Neural2-H", lang:"EN" },
+    { text: "English (US) (Male)", name: "US-Neural2-I", lang:"EN" },
+    { text: "English (US) (Male)", name: "US-Neural2-J", lang:"EN" },
     { text: "English (US) (Male)", name: "US-Standard-A", lang:"EN" },
     { text: "English (US) (Male)", name: "US-Standard-B", lang: "EN" },
     { text: "English (US) (Female)", name: "US-Standard-C", lang: "EN" },
@@ -89,17 +98,29 @@ sendQueryBtn.onclick = askGemini;
     { text: "English (US) (Male)", name: "US-Standard-I", lang: "EN" },
     { text: "English (US) (Male)", name: "US-Standard-J", lang: "EN" },
     // English (GB)
+    { text: "English (GB) (Female)", name: "GB-Neural2-A", lang: "EN" },
+    { text: "English (GB) (Male)", name: "GB-Neural2-B", lang: "EN" },
+    { text: "English (GB) (Female)", name: "GB-Neural2-C", lang: "EN" },
+    { text: "English (GB) (Male)", name: "GB-Neural2-D", lang: "EN" },
+    { text: "English (GB) (Female)", name: "GB-Neural2-F", lang: "EN" },
+    { text: "English (GB) (Female)", name: "GB-Neural2-N", lang: "EN" },
+    { text: "English (GB) (Male)", name: "GB-Neural2-O", lang: "EN" },
     { text: "English (GB) (Female)", name: "GB-Standard-A", lang: "EN" },
     { text: "English (GB) (Male)", name: "GB-Standard-B", lang: "EN" },
     { text: "English (GB) (Female)", name: "GB-Standard-C", lang: "EN" },
     { text: "English (GB) (Male)", name: "GB-Standard-D", lang: "EN" },
     { text: "English (GB) (Female)", name: "GB-Standard-F", lang: "EN" },
     // French (FR)
+    { text: "French (FR) (Female)", name: "FR-Neural2-F", lang: "FR" },
+    { text: "French (FR) (Male)", name: "FR-Neural2-G", lang: "FR" },
     { text: "French (FR) (Female)", name: "FR-Standard-A", lang: "FR" },
     { text: "French (FR) (Male)", name: "FR-Standard-B", lang: "FR" },
     { text: "French (FR) (Female)", name: "FR-Standard-C", lang: "FR" },
     { text: "French (FR) (Male)", name: "FR-Standard-D", lang: "FR" },
     // Italian (IT)
+    { text: "Italian (IT) (Female)", name: "IT-Neural2-A", lang: "IT" },
+    { text: "Italian (IT) (Female)", name: "IT-Neural2-E", lang: "IT" },
+    { text: "Italian (IT) (Male)", name: "IT-Neural2-F", lang: "IT" },
     { text: "Italian (IT) (Female)", name: "IT-Standard-E", lang: "IT" },
     { text: "Italian (IT) (Male)", name: "IT-Standard-F", lang: "IT" },
   ];
