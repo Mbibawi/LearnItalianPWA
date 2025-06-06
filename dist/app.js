@@ -163,11 +163,11 @@ async function getSentences() {
  * @param {number} [repeatCount=1] - The number of times to repeat the audio playback.
  * @param {number} [pause=1000] - The pause duration between repetitions in milliseconds.
  */
-async function playAudio({ text, audioBase64 }, repeatCount = 1, pause = 1000) {
-    console.log('Playing audio for sentence:', text);
+async function playAudio(sentence, repeatCount = 1, pause = 1000) {
+    console.log('Playing audio for sentence:', sentence.text);
     // Display the text in the UI
-    geminiOutput.textContent = `${geminiOutput.textContent}\n${text}`;
-    if (!audioBase64)
+    geminiOutput.textContent = `${geminiOutput.textContent}\n${sentence.text}`;
+    if (!sentence.audioBase64)
         return alert('No audio data received or MIME type missing.');
     const repeat = Array(repeatCount).fill(0).map((_, i) => i); // Create an array to repeat the audio
     const player = document.getElementById('audioPlayer') || document.createElement('audio'); // Create or get the audio player
@@ -177,7 +177,7 @@ async function playAudio({ text, audioBase64 }, repeatCount = 1, pause = 1000) {
     player.controls = true; // Enable controls for the audio player
     player.autoplay = false; // Disable autoplay
     geminiOutput.insertAdjacentElement('beforebegin', player); // Insert the audio player before the output div
-    const audioSrc = `data:audio/mp3;base64,${audioBase64}`;
+    const audioSrc = `data:audio/mp3;base64,${sentence.audioBase64}`;
     player.src = audioSrc;
     for (const play of repeat) {
         player.currentTime = 0; // Reset to start
