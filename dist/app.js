@@ -135,9 +135,9 @@ async function getSentences() {
     const cloudFunctionUrl = 'https://gemini-proxy-428231091257.europe-west1.run.app/api/sentences';
     const number = prompt('How many sentences do you want to get from Gemini? (default is 3)');
     const words = prompt('Do you want to set the maximum number of words for each sentence ?');
-    const targetLanguage = targetLangSelect.textContent || prompt("You must define the target language, otherwise it will be set to \"English\"", "English") || "English";
+    const targetLanguage = targetLangSelect.options[targetLangSelect.selectedIndex].text || prompt("You must define the target language, otherwise it will be set to \"English\"", "English") || "English";
     let query = geminiInput.value.trim(); // Get the input query from the text area
-    query = `Generate ${isNaN(Number(number)) ? 3 : Number(number)} distinct sentences in the ${targetLanguage} language according to the following guidelines or instructions: "${query}". Each sentence should not exceed ${isNaN(Number(words)) ? 10 : Number(words)} words long. Return the sentences as a JSON array of strings. For example: ["Sentence one.", "Sentence two."]\nEnsure the output is ONLY the JSON array.`;
+    query = `Generate ${isNaN(Number(number)) ? 3 : Number(number)} distinct sentences in the ${targetLanguage} language according to the following guidelines or instructions: ${query}. Each sentence should not exceed ${isNaN(Number(words)) ? 10 : Number(words)} words long. Return the sentences as a JSON array of strings. For example: ["Sentence one.", "Sentence two."]\nEnsure the output is ONLY the JSON array.`;
     const data = await callCloudFunction(cloudFunctionUrl, query); // Call the askGemini function with the cloud function URL
     const sentences = data.sentences; // Extract sentences from the response
     if (!data.sentences)
@@ -224,7 +224,6 @@ async function callCloudFunction(url, query, params) {
         //  volumeGainDb: 0.0,  // -96.0 to 16.0 (0.0 is normal)
         // effectsProfileId: ['small-bluetooth-speaker-effect'], // Optional, for specific audio profiles
     };
-    voiceName.value = voiceParams.name; // Set the voice name in the UI;
     setLocalStorage(); // Save settings to localStorage
     console.log('Calling Gemini with query:', query, 'and voice params:', voiceParams, 'and audio config:', audioConfig);
     geminiOutput.textContent = 'Fetching Gemini Query...'; // Update the UI to indicate fetching
