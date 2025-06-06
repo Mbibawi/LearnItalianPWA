@@ -66,44 +66,40 @@ sendQueryBtn.onclick = askGemini;
   // Array of available voice options for the Text-to-Speech API
   // This list is manually curated based on Google Cloud Text-to-Speech standard voices.
   type Option = {
-    text: string; name: string; lang: string;
-  };
+    text: string; name: string; lang: string};
   const voices: Option[] = [
     // English (US)
-    { text: "English (US) (Male)", name: "Standard-A", lang: "US" },
-    { text: "English (US) (Male)", name: "Standard-B", lang: "US" },
-    { text: "English (US) (Female)", name: "Standard-C", lang: "US" },
-    { text: "English (US) (Male)", name: "Standard-D", lang: "US" },
-    { text: "English (US) (Female)", name: "Standard-E", lang: "US" },
-    { text: "English (US) (Female)", name: "Standard-F", lang: "US" },
-    { text: "English (US) (Female)", name: "Standard-G", lang: "US" },
-    { text: "English (US) (Female)", name: "Standard-H", lang: "US" },
-    { text: "English (US) (Male)", name: "Standard-I", lang: "US" },
-    { text: "English (US) (Male)", name: "Standard-J", lang: "US" },
+    { text: "English (US) (Male)", name: "US-Standard-A", lang:"EN" },
+    { text: "English (US) (Male)", name: "US-Standard-B", lang: "EN" },
+    { text: "English (US) (Female)", name: "US-Standard-C", lang: "EN" },
+    { text: "English (US) (Male)", name: "US-Standard-D", lang: "EN" },
+    { text: "English (US) (Female)", name: "US-Standard-E", lang: "EN" },
+    { text: "English (US) (Female)", name: "US-Standard-F", lang: "EN" },
+    { text: "English (US) (Female)", name: "US-Standard-G", lang: "EN" },
+    { text: "English (US) (Female)", name: "US-Standard-H", lang: "EN" },
+    { text: "English (US) (Male)", name: "US-Standard-I", lang: "EN" },
+    { text: "English (US) (Male)", name: "US-Standard-J", lang: "EN" },
     // English (GB)
-    { text: "English (GB) (Female)", name: "Standard-A", lang: "GB" },
-    { text: "English (GB) (Male)", name: "Standard-B", lang: "GB" },
-    { text: "English (GB) (Female)", name: "Standard-C", lang: "GB" },
-    { text: "English (GB) (Male)", name: "Standard-D", lang: "GB" },
-    { text: "English (GB) (Female)", name: "Standard-F", lang: "GB" },
+    { text: "English (GB) (Female)", name: "GB-Standard-A", lang: "EN" },
+    { text: "English (GB) (Male)", name: "GB-Standard-B", lang: "EN" },
+    { text: "English (GB) (Female)", name: "GB-Standard-C", lang: "EN" },
+    { text: "English (GB) (Male)", name: "GB-Standard-D", lang: "EN" },
+    { text: "English (GB) (Female)", name: "GB-Standard-F", lang: "EN" },
     // French (FR)
-    { text: "French (FR) (Female)", name: "Standard-A", lang: "FR" },
-    { text: "French (FR) (Male)", name: "Standard-B", lang: "FR" },
-    { text: "French (FR) (Female)", name: "Standard-C", lang: "FR" },
-    { text: "French (FR) (Male)", name: "Standard-D", lang: "FR" },
+    { text: "French (FR) (Female)", name: "FR-Standard-A", lang: "FR" },
+    { text: "French (FR) (Male)", name: "FR-Standard-B", lang: "FR" },
+    { text: "French (FR) (Female)", name: "FR-Standard-C", lang: "FR" },
+    { text: "French (FR) (Male)", name: "FR-Standard-D", lang: "FR" },
     // Italian (IT)
-    { text: "Italian (IT) (Female)", name: "Standard-A", lang: "IT" },
-    { text: "Italian (IT) (Female)", name: "Standard-B", lang: "IT" },
-    { text: "Italian (IT) (Female)", name: "Standard-C", lang: "IT" },
-    { text: "Italian (IT) (Female)", name: "Standard-D", lang: "IT" },
-    { text: "Italian (IT) (Female)", name: "Standard-E", lang: "IT" },
+    { text: "Italian (IT) (Female)", name: "IT-Standard-E", lang: "IT" },
+    { text: "Italian (IT) (Male)", name: "IT-Standard-F", lang: "IT" },
   ];
   // Populate the voice selection dropdown with available voices
   
   voices.forEach(voice => {
     const option = document.createElement('option');
     option.lang = voice.lang; // Set the language attribute for the option
-    option.value = `${voice.lang.toLowerCase()}-${voice.lang.toUpperCase()}-${voice.name}`; // e.g., 'en-US-Standard-A'
+    option.value = `${voice.lang.toLowerCase()}-${voice.name}`; // e.g., 'en-US-Standard-A'
     option.textContent = voice.text;
     voiceName.appendChild(option);
   });
@@ -259,7 +255,7 @@ async function callCloudFunction(url: string, query?:string, params?:{ [key: str
   // const accessToken = await getAccessToken();
   
   if(!query) return alert('Please enter a query to send to Gemini');
-  let lang = targetLangSelect.options[targetLangSelect.selectedIndex]?.value; // Default to English if no target language is selected
+  let lang = voiceName.options[voiceName.selectedIndex]?.lang // Default to English if no target language is selected
   if (!lang) return alert('No target language selected. We will exit the function');
   if (!['en', 'fr', 'it', 'ar', 'de'].includes(lang)) return alert('The language must be either "en", "fr", "it", "de" or "ar". We will exit the function');
 
