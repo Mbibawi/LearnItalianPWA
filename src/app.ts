@@ -37,7 +37,7 @@
   ensureServiceWorkerRegisteredInternal();
 })();
 
-type Sentence = { text: string;  audioBase64: string };
+type Sentence = { text: string;  audio: string };
 const sourceLangSelect = document.getElementById('sourceLanguage') as HTMLSelectElement;
 const targetLangSelect = document.getElementById('targetLanguage') as HTMLSelectElement;
 const repeatCountInput = document.getElementById('repeatCount') as HTMLInputElement;
@@ -201,11 +201,11 @@ async function getSentences(){
  * @param {number} [repeatCount=1] - The number of times to repeat the audio playback.
  * @param {number} [pause=1000] - The pause duration between repetitions in milliseconds.
  */
-async function playAudio(sentence: Sentence, repeatCount: number = 1, pause:number = 1000) {
-  console.log('Playing audio for sentence:', sentence.text);
+async function playAudio({text, audio}: Sentence, repeatCount: number = 1, pause:number = 1000) {
+  console.log('Playing audio for sentence:', text);
   // Display the text in the UI
-  geminiOutput.textContent = `${geminiOutput.textContent}\n${sentence.text}`;
-  if (!sentence.audioBase64) return alert('No audio data received or MIME type missing.');
+  geminiOutput.textContent = `${geminiOutput.textContent}\n${text}`;
+  if (!audio) return alert('No audio data received or MIME type missing.');
 
   const repeat = Array(repeatCount).fill(0).map((_, i) => i); // Create an array to repeat the audio
   const player = document.getElementById('audioPlayer') as HTMLAudioElement || document.createElement('audio'); // Create or get the audio player
@@ -217,7 +217,7 @@ async function playAudio(sentence: Sentence, repeatCount: number = 1, pause:numb
   player.autoplay = false; // Disable autoplay
   geminiOutput.insertAdjacentElement('beforebegin', player); // Insert the audio player before the output div
 
-  const audioSrc = `data:audio/mp3;base64,${sentence.audioBase64}`;
+  const audioSrc = `data:audio/mp3;base64,${audio}`;
   player.src = audioSrc;
 
     for (const play of repeat) {
@@ -264,7 +264,7 @@ async function callCloudFunction(url: string, query?:string, params?:{ [key: str
   if (!voice.lang || !voice.dataset.country || !voice.value) return alert('The selected voice is missing language or country information. Please select a valid voice.');
   
   const voiceParams = {
-    languageCode: `${voice.lang.toLowerCase}-${voice.dataset.country}`, // e.g., 'en-GB' for Grand Britain English
+    languageCode: `${voice.lang.toLowerCase()}-${voice.dataset.country}`, // e.g., 'en-GB' for Grand Britain English
     name: voice.value,
   };
   
