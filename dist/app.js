@@ -128,7 +128,8 @@ sendQueryBtn.onclick = askGemini;
     const settings = localStorage.geminiSettings ? JSON.parse(localStorage.geminiSettings) : null;
     if (!settings)
         return;
-    preFilled.forEach(input => input.value = settings[input.id]); // Set the value from localStorage or keep the default
+    preFilled
+        .forEach(input => { var _a; return input.value = ((_a = settings.find(el => el[0] === input.id)) === null || _a === void 0 ? void 0 : _a[1]) || input.value; }); // Set the value from localStorage or keep the default
 })();
 /**
  * Asks Gemini API for a response based on the input query.
@@ -256,7 +257,7 @@ async function callCloudFunction(url, query, params) {
         //  volumeGainDb: 0.0,  // -96.0 to 16.0 (0.0 is normal)
         // effectsProfileId: ['small-bluetooth-speaker-effect'], // Optional, for specific audio profiles
     };
-    setLocalStorage(); // Save settings to localStorage
+    saveToLocalStorage(); // Save settings to localStorage
     console.log('Calling Gemini with query:', query, 'and voice params:', voiceParams, 'and audio config:', audioConfig);
     geminiOutput.textContent = 'Fetching Gemini Query...'; // Update the UI to indicate fetching
     try {
@@ -338,8 +339,8 @@ async function getAccessToken(prompt = false) {
         }
     });
 }
-function setLocalStorage() {
-    const values = preFilled.forEach(input => [input.id, input.value]); // Create an object with the input IDs and their values
+function saveToLocalStorage() {
+    const values = preFilled.map(input => [input.id, input.value]); // Create an object with the input IDs and their values
     localStorage.geminiSettings = JSON.stringify(values);
     console.log('Settings saved to localStorage:', values);
 }
