@@ -65,6 +65,9 @@ const REDIRECT_URI = 'https://mbibawi.github.io/LearnItalianPWA/';
 const SCOPES = 'https://www.googleapis.com/auth/userinfo.email';
 const API_SCOPE = 'https://www.googleapis.com/auth/cloud-platform'; // Or the specific Gemini API scope
 
+const SENTENCES_API = 'https://gemini-proxy-428231091257.europe-west1.run.app/api/sentences'
+const ASK_API = 'https://gemini-proxy-428231091257.europe-west1.run.app/api/ask'
+
 
 // Gemini Buttons Handleers
 sentencesBtn.onclick = getSentences;
@@ -153,7 +156,7 @@ sendQueryBtn.onclick = askGemini;
  * @returns {Promise<void>} A promise that resolves when the audio is played.
  */
 async function askGemini(): Promise<void | any[]> {
-  const cloudFunctionUrl = 'https://gemini-proxy-428231091257.europe-west1.run.app/api/ask'; 
+ 
   //const accessToken = await getAccessToken();
   //if (!accessToken) return console.log('Could not get accessToken');
 
@@ -162,7 +165,7 @@ async function askGemini(): Promise<void | any[]> {
   geminiOutput.textContent = 'Asking Gemini...';
 
 
-  const data = await callCloudFunction(cloudFunctionUrl, prompt); // Call the askGemini function with the cloud function URL
+  const data = await callCloudFunction(ASK_API, prompt); // Call the askGemini function with the cloud function URL
 
   const response:Sentence = data.response;
 
@@ -180,8 +183,7 @@ async function askGemini(): Promise<void | any[]> {
  * @returns {Promise<string>} A promise that resolves to the access token.
  */
 async function getSentences(){
-  const cloudFunctionUrl = 'https://gemini-proxy-428231091257.europe-west1.run.app/api/sentences';
-
+  
   const number = prompt('How many sentences do you want to get from Gemini? (default is 3)');
 
   const words = prompt('Do you want to set the maximum number of words for each sentence ?');
@@ -194,7 +196,7 @@ async function getSentences(){
   query = `Generate ${isNaN(Number(number)) ? 3 : Number(number)} distinct sentences in the ${targetLanguage} language according to the following guidelines or instructions: ${query}. Each sentence should not exceed ${isNaN(Number(words))?10:Number(words)} words long. Return the sentences as a JSON array of strings. For example: ["Sentence one.", "Sentence two."]\nEnsure the output is ONLY the JSON array.`;
   
   
-  const data = await callCloudFunction(cloudFunctionUrl, query); // Call the askGemini function with the cloud function URL
+  const data = await callCloudFunction(SENTENCES_API, query); // Call the askGemini function with the cloud function URL
   
   const sentences:Sentence[] = data.sentences; // Extract sentences from the response
   
@@ -222,11 +224,16 @@ async function getSentences(){
  * @param {number} [repeatCount=1] - The number of times to repeat the audio playback.
  * @param {number} [pause=1000] - The pause duration between repetitions in milliseconds.
  */
-async function playAudio({text, audio}: Sentence, repeatCount: number = 1, pause:number = 1000) {
+async function playAudio({text, audio}: Sentence, repeatCount: number = 1, pause:number = 1000, translate:boolean = false): Promise<void> {
   console.log('Playing audio for sentence:', text);
   // Display the text in the UI
   geminiOutput.textContent = `${geminiOutput.textContent}\n${text}`;
-  if (!audio) return alert('No audio data received or MIME type missing.');
+  const translation = await translateSentence(text, "English", translate);
+
+  if (translation)
+    geminiOutput.textContent += ` (English Translation: ${translation})`; // Display the translation if available
+
+  if (!audio) return alert('No audio to play.');
 
   const repeat = Array(repeatCount).fill(0).map((_, i) => i); // Create an array to repeat the audio
   const player = document.getElementById('audioPlayer') as HTMLAudioElement || document.createElement('audio'); // Create or get the audio player
@@ -251,6 +258,14 @@ async function playAudio({text, audio}: Sentence, repeatCount: number = 1, pause
 
   function delay(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  async function translateSentence(text: string, targetLang: string, translate: boolean): Promise<string | null> {
+    if (!translate) return null;
+    const query = `Translate the following sentence to ${targetLang}: "${text}". Return only the translated sentence without any additional text."`;
+    const data = await callCloudFunction(ASK_API, query, { noAudio: true });
+    const response:Sentence = data.response;
+    return response.text|| null; // Return the translation text or null if not available
   }
 
   function getAudioURL(audio:string, mimeType: string): string {
@@ -304,6 +319,7 @@ async function callCloudFunction(url: string, query?:string, params?:{ [key: str
     return await fetchGemini();
   } catch (error) {
     console.log('Error fetching Gemini Query: ', error)
+    return null
   }
   
   async function fetchGemini() {
