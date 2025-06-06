@@ -36,6 +36,7 @@
   // Automatically call the function when this script loads
   ensureServiceWorkerRegisteredInternal();
 })();
+
 type Sentence = { text: string;  audioBase64: string };
 const sourceLangSelect = document.getElementById('sourceLanguage') as HTMLSelectElement;
 const targetLangSelect = document.getElementById('targetLanguage') as HTMLSelectElement;
@@ -50,6 +51,14 @@ const geminiOutput = document.getElementById('geminiResponse') as HTMLDivElement
 const sendQueryBtn = document.getElementById('askGemini') as HTMLButtonElement;
 const sentencesBtn = document.getElementById('getSentences') as HTMLButtonElement;
 
+const preFilled = [
+  sourceLangSelect,
+  targetLangSelect,
+  voiceName,
+  pauseInput,
+  repeatCountInput,
+  voiceRate,
+];
 
 const CLIENT_ID = '428231091257-9tmnknivkkmmtpei2k0jrrvc4kg4g4jh.apps.googleusercontent.com';//Google Client ID for the gemini API
 const REDIRECT_URI = 'https://mbibawi.github.io/LearnItalianPWA/';
@@ -99,24 +108,22 @@ sendQueryBtn.onclick = askGemini;
   voices.forEach(voice => {
     const option = document.createElement('option');
     option.lang = voice.lang; // Set the language attribute for the option
+    option.dataset.country = voice.name.split('-')[0]; //e.g., 'GB' for British English
     option.value = `${voice.lang.toLowerCase()}-${voice.name}`; // e.g., 'en-US-Standard-A'
     option.textContent = voice.text;
     voiceName.appendChild(option);
   });
 })();
 
+
+
 // Initialize the voice selection dropdown with the first option as default
 (function initializeInputs() {
   // Load settings from localStorage if available 
   const settings = localStorage.geminiSettings ? JSON.parse(localStorage.geminiSettings) : null;
   if (!settings) return;
-  sourceLangSelect.value = settings.sourceLanguage; // Default to English
-  targetLangSelect.value = settings.targetLanguage; // Default to English
-  pauseInput.value = settings.pauseDuration || '1.0'; // Default to 1 second
-  repeatCountInput.value = settings.repeatCount || '1'; // Default to 1
-  voiceRate.value = settings.voiceRate || '1'; // Default to normal rate 
-  voiceName.value = settings.voiceName || ''; // Default voice
-})();
+  preFilled.forEach(input => input.value = settings[input.id]); // Set the value from localStorage or keep the default
+  })();
 
 /**
  * Asks Gemini API for a response based on the input query.
@@ -128,13 +135,8 @@ async function askGemini(): Promise<void | any[]> {
   const cloudFunctionUrl = 'https://gemini-proxy-428231091257.europe-west1.run.app/api/ask'; 
   //const accessToken = await getAccessToken();
   //if (!accessToken) return console.log('Could not get accessToken');
-  const targetLanguage = '';
-  const sentencesNumber = '';
-  const wordsNumber = '';
-  const query = '';
 
   const prompt = geminiInput.value.trim(); // Get the input query from the text area 
-
 
   geminiOutput.textContent = 'Asking Gemini...';
 
@@ -254,17 +256,18 @@ async function playAudio(sentence: Sentence, repeatCount: number = 1, pause:numb
 async function callCloudFunction(url: string, query?:string, params?:{ [key: string]: any }): Promise<any> {
   // const accessToken = await getAccessToken();
   
-  if(!query) return alert('Please enter a query to send to Gemini');
-  let lang = voiceName.options[voiceName.selectedIndex]?.lang // Default to English if no target language is selected
-  if (!lang) return alert('No target language selected. We will exit the function');
-  if (!['en', 'fr', 'it', 'ar', 'de'].includes(lang)) return alert('The language must be either "en", "fr", "it", "de" or "ar". We will exit the function');
-
-  lang = `${lang.toLowerCase()}-${lang.toUpperCase()}`; // e.g., 'it-IT' for Italian 
-  const defaultVoice = voiceName.options[0].value; // Default voice from the first option
+  if (!query) return alert('Please enter a query to send to Gemini');
+  
+  if (voiceName.selectedIndex < 0) return alert('Please select a voice to use for the audio playback');
+  
+  const voice = voiceName.options[voiceName.selectedIndex];
+  if (!voice.lang || !voice.dataset.country || !voice.value) return alert('The selected voice is missing language or country information. Please select a valid voice.');
+  
   const voiceParams = {
-    languageCode: lang,
-    name: voiceName.value || prompt('Provide the voice name', defaultVoice) || defaultVoice, // Example standard voice
+    languageCode: `${voice.lang.toLowerCase}-${voice.dataset.country}`, // e.g., 'en-GB' for Grand Britain English
+    name: voice.value,
   };
+  
   const audioConfig = {
     audioEncoding: 'MP3',// Or 'LINEAR16' for uncompressed WAV
     speakingRate: voiceRate.valueAsNumber || 1.0,  // 0.25 to 4.0 (1.0 is normal)
@@ -363,15 +366,7 @@ async function getAccessToken(prompt: boolean = false): Promise<string> {
 }
 
 function setLocalStorage() {
-  const values = {
-    sourceLanguage: sourceLangSelect.value,
-    targetlanguage: targetLangSelect.value,
-    repeatCount: repeatCountInput.value,
-    voiceRate: voiceRate.value,
-    voicePitch: voicePitch.value,
-    pauseDuration: pauseInput.value,
-    voiceName: voiceName.value,
-  }
+  const values = preFilled.forEach(input => [input.id, input.value]); // Create an object with the input IDs and their values
   localStorage.geminiSettings = JSON.stringify(values);
   console.log('Settings saved to localStorage:', values);
 }
