@@ -88,7 +88,7 @@ sendQueryBtn.onclick = askGemini;
     voices.forEach(voice => {
         const option = document.createElement('option');
         option.lang = voice.lang; // Set the language attribute for the option
-        option.value = `${voice.lang.toLowerCase()}-${voice.lang.toLowerCase()}-${voice.name}`; // e.g., 'en-US-Standard-A'
+        option.value = `${voice.lang.toLowerCase()}-${voice.lang.toUpperCase()}-${voice.name}`; // e.g., 'en-US-Standard-A'
         option.textContent = voice.text;
         voiceName.appendChild(option);
     });
@@ -120,8 +120,7 @@ async function askGemini() {
     const sentencesNumber = '';
     const wordsNumber = '';
     const query = '';
-    const prompt = `Generate ${sentencesNumber} distinct sentences in the ${targetLanguage} language according to the following guidelines or instructions: "${query}". Each sentence should not exceed ${wordsNumber} words long.
-    Return the sentences as a JSON array of strings. For example: ["Sentence one.", "Sentence two."]\nEnsure the output is ONLY the JSON array.`;
+    const prompt = geminiInput.value.trim(); // Get the input query from the text area 
     geminiOutput.textContent = 'Asking Gemini...';
     const data = await callCloudFunction(cloudFunctionUrl, prompt); // Call the askGemini function with the cloud function URL
     const response = data.response;
@@ -222,7 +221,7 @@ async function callCloudFunction(url, query, params) {
     const defaultVoice = voiceName.options[0].value; // Default voice from the first option
     const voiceParams = {
         languageCode: lang,
-        name: `${lang}-${voiceName.value}` || prompt('Provide the voice name', defaultVoice) || defaultVoice, // Example standard voice
+        name: voiceName.value || prompt('Provide the voice name', defaultVoice) || defaultVoice, // Example standard voice
     };
     const audioConfig = {
         audioEncoding: 'MP3', // Or 'LINEAR16' for uncompressed WAV
