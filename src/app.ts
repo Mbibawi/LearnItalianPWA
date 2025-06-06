@@ -173,7 +173,7 @@ async function askGemini(): Promise<void | any[]> {
   if (!response) throw new Error('No response received from Gemini API');
   
   geminiOutput.textContent = "";
-  
+  var SENTENCES = [response];
   await playAudio(response);
   
 }
@@ -208,10 +208,11 @@ async function getSentences(){
   const repeatCount = parseInt(repeatCountInput.value) || 1;
   const pause = parseInt(pauseInput.value) * 1000 || 1000
 
-  const results = [];
+  var SENTENCES = sentences;
+  
   
   for (const sentence of sentences) {
-    results.push(await playAudio(sentence, repeatCount, pause, true)); // Collect results
+    await playAudio(sentence, repeatCount, pause, true); // Collect results
   };
 
 };
@@ -263,8 +264,10 @@ async function playAudio({text, audio}: Sentence, repeatCount: number = 1, pause
 
   async function translateSentence(text: string, targetLang: string, translate: boolean): Promise<string | null> {
     if (!translate) return null;
+    const textContent = geminiOutput.textContent;//! We must keep the already existing textContent because callCloudFunction will delete it
     const query = `Translate the following sentence to ${targetLang}: "${text}". Return only the translated sentence without any additional text."`;
     const data = await callCloudFunction(ASK_API, query, { noAudio: true });
+    geminiOutput.textContent = textContent;//! we reinstate the existing textContent
     const response:Sentence = data.response;
     return response.text|| null; // Return the translation text or null if not available
   }
