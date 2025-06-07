@@ -75,7 +75,7 @@ const API_SCOPE = 'https://www.googleapis.com/auth/cloud-platform'; // Or the sp
 
 const SENTENCES_API = 'https://gemini-proxy-428231091257.europe-west1.run.app/api/sentences'
 const ASK_API = 'https://gemini-proxy-428231091257.europe-west1.run.app/api/ask'
-const GEMINI_MODEL = "gemini-2.5-flash-preview"
+const GEMINI_MODEL = "gemini-2.5-flash"
 
 
 // Gemini Buttons Handleers
@@ -197,7 +197,7 @@ sendQueryBtn.onclick = askGemini;
  * and plays the audio response.
  * @returns {Promise<void>} A promise that resolves when the audio is played.
  */
-async function askGemini(): Promise<void | any[]> {
+async function __askGemini(): Promise<void | any[]> {
 
   const sourceLanguage = sourceLangSelect.value || 'English';
   const voice = voiceName.options[voiceName.selectedIndex];
@@ -256,7 +256,7 @@ async function askGemini(): Promise<void | any[]> {
       ]
     }
   ];
-  const data = await callCloudFunction(ASK_API, { text: content }, { text: config }); // Call the askGemini function with the cloud function URL
+  const data = await __callCloudFunction(ASK_API, { text: content }, { text: config }); // Call the askGemini function with the cloud function URL
 
   const response: Sentence = data.response;
 
@@ -275,7 +275,7 @@ async function askGemini(): Promise<void | any[]> {
  * and plays the audio response.
  * @returns {Promise<void>} A promise that resolves when the audio is played.
  */
-async function _askGemini(): Promise<void | any[]> {
+async function askGemini(): Promise<void | any[]> {
 
   //const accessToken = await getAccessToken();
   //if (!accessToken) return console.log('Could not get accessToken');
@@ -285,7 +285,7 @@ async function _askGemini(): Promise<void | any[]> {
   geminiOutput.textContent = 'Asking Gemini...';
 
 
-  const data = await _callCloudFunction(ASK_API, prompt); // Call the askGemini function with the cloud function URL
+  const data = await callCloudFunction(ASK_API, prompt); // Call the askGemini function with the cloud function URL
 
   const response: Sentence = data.response;
 
@@ -335,7 +335,7 @@ function removeSsmlMarkup(ssmlText: string): string {
  * This function is a placeholder and should be implemented to fetch the token.
  * @returns {Promise<string>} A promise that resolves to the access token.
  */
-async function _generateSentences() {
+async function generateSentences() {
 
   const number = prompt('How many sentences do you want to get from Gemini? (default is 3)');
 
@@ -347,7 +347,7 @@ async function _generateSentences() {
   const query = `Generate ${isNaN(Number(number)) ? 3 : Number(number)} distinct sentences in the ${targetLanguage} language according to the following guidelines or instructions: ${geminiInput.value.trim()}. Each sentence should not exceed ${isNaN(Number(words)) ? 10 : Number(words)} words long. Return the sentences as a JSON array of strings. For example: ["Sentence one.", "Sentence two."]\nEnsure the output is ONLY the JSON array.`;
 
   geminiOutput.textContent = 'Waiting for the sente...'; // Update the UI to indicate fetching
-  const data = await _callCloudFunction(SENTENCES_API, query); // Call the askGemini function with the cloud function URL
+  const data = await callCloudFunction(SENTENCES_API, query); // Call the askGemini function with the cloud function URL
 
   const sentences: Sentence[] = data.sentences; // Extract sentences from the response
 
@@ -364,7 +364,7 @@ async function _generateSentences() {
 
 };
 
-async function generateSentences() {
+async function __generateSentences() {
 
   const number = prompt('How many sentences do you want to get from Gemini? (default is 3)');
 
@@ -443,7 +443,7 @@ async function generateSentences() {
   };
 
  
-  const data = await callCloudFunction(SENTENCES_API, prompts, configs);
+  const data = await __callCloudFunction(SENTENCES_API, prompts, configs);
   debugger
   const sentences = data as { text: string[], audio: Uint8Array[] };
 
@@ -521,7 +521,7 @@ async function playAudio({ text, audio }: Sentence, repeatCount: number = 1, pau
   async function translateSentence(text: string, targetLang: string, translate: boolean): Promise<string | null> {
     if (!translate) return null;
     const query = `Translate the following sentence to ${targetLang}: "${text}". Return only the translated sentence without any additional text."`;
-    const data = await _callCloudFunction(ASK_API, query, { noAudio: true });
+    const data = await callCloudFunction(ASK_API, query, { noAudio: true });
     const response: Sentence = data.response;
     return response.text || null; // Return the translation text or null if not available
   }
@@ -541,7 +541,7 @@ async function playAudio({ text, audio }: Sentence, repeatCount: number = 1, pau
 }
 
 
-async function callCloudFunction(
+async function __callCloudFunction(
   url: string,
   content: RequestContent,
   config: RequestConfig,
@@ -592,7 +592,7 @@ async function callCloudFunction(
  * @param {Object} [params] - Optional parameters to include in the request body.
  * @returns {Promise<any>} A promise that resolves to the response from the cloud function.
  */
-async function _callCloudFunction(url: string, query?: string, params?: { [key: string]: any }): Promise<any> {
+async function callCloudFunction(url: string, query?: string, params?: { [key: string]: any }): Promise<any> {
   // const accessToken = await getAccessToken();
 
   if (!query) return alert('Please enter a query to send to Gemini');
