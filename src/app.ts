@@ -1,6 +1,3 @@
-import { Prompt } from './../node_modules/@modelcontextprotocol/sdk/dist/cjs/types.d';
-import { GenerateContentConfig, GenerateContentParameters, GoogleGenAI } from "@google/genai";
-
 (function () { // Self-executing anonymous function
   const swPath = './service-worker.js'; // Define your service worker path here
 
@@ -42,7 +39,7 @@ import { GenerateContentConfig, GenerateContentParameters, GoogleGenAI } from "@
 
 type Sentence = { text: string; audio: Uint8Array };
 type RequestContent = { text: any[]; audio?: any[] };
-type RequestConfig = { text: GenerateContentConfig, audio?: GenerateContentConfig };
+type RequestConfig = { text: { responseMimeType: string; responseSchema?: object; systemInstruction?: string; speechConfig?: object; responseModalities?: string[] }, audio?: { responseMimeType: string; systemInstruction?: string; speechConfig?: object } };
 type PromptContent = {
   "role": string;
   "parts": [{"text": string}]
@@ -235,7 +232,7 @@ async function askGemini(): Promise<void | any[]> {
 
   const lang = voice.lang || sourceLangSelect.options[sourceLangSelect.selectedIndex].value || 'en';
 
-  const config: GenerateContentConfig = {
+  const config = {
     responseMimeType: "audio/mpeg",
     responseSchema: schema,
     systemInstruction: speech, //Instruction about how to read the text 
@@ -398,7 +395,7 @@ async function generateSentences() {
     }
   };
 
-  const textConfig: GenerateContentConfig = {
+  const textConfig = {
     responseMimeType: "application/json",
     responseSchema: textSchema, //my JSON schema
   };
@@ -411,7 +408,7 @@ async function generateSentences() {
 
   const lang = voice.lang || sourceLangSelect.options[sourceLangSelect.selectedIndex].value || 'en';
   
-  const audioConfig: GenerateContentConfig = {
+  const audioConfig = {
     responseMimeType: "audio/mpeg",
     systemInstruction: audioSpeech, //Instruction about how to read the text 
     speechConfig: {

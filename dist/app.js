@@ -1,5 +1,4 @@
 "use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
 (function () {
     const swPath = './service-worker.js'; // Define your service worker path here
     /**
