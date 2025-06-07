@@ -1,4 +1,5 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 (function () {
     const swPath = './service-worker.js'; // Define your service worker path here
     /**
@@ -60,12 +61,44 @@ const SCOPES = 'https://www.googleapis.com/auth/userinfo.email';
 const API_SCOPE = 'https://www.googleapis.com/auth/cloud-platform'; // Or the specific Gemini API scope
 const SENTENCES_API = 'https://gemini-proxy-428231091257.europe-west1.run.app/api/sentences';
 const ASK_API = 'https://gemini-proxy-428231091257.europe-west1.run.app/api/ask';
+const GEMINI_MODEL = "gemini-2.5-flash-preview-tts";
 // Gemini Buttons Handleers
-sentencesBtn.onclick = getSentences;
+sentencesBtn.onclick = generateSentences;
 sendQueryBtn.onclick = askGemini;
 // Language selection handlers
 (function populateVoiceOptions() {
     const voices = [
+        //PreBuilt
+        { text: "PreBuilt - Zephyr (Bright)", name: "Zephyr", lang: undefined },
+        { text: "PreBuilt - Puck (Upbeat)", name: "Puck", lang: undefined },
+        { text: "PreBuilt - Charon (Informative)", name: "Charon", lang: undefined },
+        { text: "PreBuilt- Kore (Firm)", name: "Kore", lang: undefined },
+        { text: "PreBuilt - Fenrir (Excitable)", name: "Fenrir", lang: undefined },
+        { text: "PreBuilt - Leda (Youthful)", name: "Leda", lang: undefined },
+        { text: "PreBuilt - Orus (Firm)", name: "Orus", lang: undefined },
+        { text: "PreBuilt - Aoede (Breezy)", name: "Aoede", lang: undefined },
+        { text: "PreBuilt - Callirrhoe (Easy going)", name: "Callirrhoe", lang: undefined },
+        { text: "PreBuilt - Autonoe (Bright)", name: "Autonoe", lang: undefined },
+        { text: "PreBuilt - Enceladus (Breathy)", name: "Enceladus", lang: undefined },
+        { text: "PreBuilt - Iapetus (Clear)", name: "Iapetus", lang: undefined },
+        { text: "PreBuilt - Umbriel (Easy going)", name: "Umbriel", lang: undefined },
+        { text: "PreBuilt - Algieba (Smooth)", name: "Algieba", lang: undefined },
+        { text: "PreBuilt - Despina (Smooth)", name: "Despina", lang: undefined },
+        { text: "PreBuilt - Erinome (Clear)", name: "Erinome", lang: undefined },
+        { text: "PreBuilt - Algenib (Gravelly)", name: "Algenib", lang: undefined },
+        { text: "PreBuilt - Rasalgethi (Informative)", name: "Rasalgethi", lang: undefined },
+        { text: "PreBuilt - Laomedeia (Upbeat)", name: "Laomedeia", lang: undefined },
+        { text: "PreBuilt - Achernar (Soft)", name: "Achernar", lang: undefined },
+        { text: "PreBuilt - Alnilam (Firm)", name: "Alnilam", lang: undefined },
+        { text: "PreBuilt - Schedar (Even)", name: "Schedar", lang: undefined },
+        { text: "PreBuilt - Gacrux (Mature)", name: "Gacrux", lang: undefined },
+        { text: "PreBuilt - Pulcherrima (Forward)", name: "Pulcherrima", lang: undefined },
+        { text: "PreBuilt - Achird (Friendly)", name: "Achird", lang: undefined },
+        { text: "PreBuilt - Zubenelgenubi (Casual)", name: "Zubenelgenubi", lang: undefined },
+        { text: "PreBuilt - Vindemiatrix (Gentle)", name: "Vindemiatrix", lang: undefined },
+        { text: "PreBuilt - Sadachbia (Lively)", name: "Sadachbia", lang: undefined },
+        { text: "PreBuilt - Sadaltager (Knowledgeable)", name: "Sadaltager", lang: undefined },
+        { text: "PreBuilt - Sulafat (Warm)", name: "Sulafat", lang: undefined },
         // English (US)
         { text: "English (US) (Male)", name: "US-Neural2-A", lang: "EN" },
         { text: "English (US) (Female)", name: "US-Neural2-C", lang: "EN" },
@@ -115,10 +148,12 @@ sendQueryBtn.onclick = askGemini;
     ];
     // Populate the voice selection dropdown with available voices
     voices.forEach(voice => {
+        var _a;
         const option = document.createElement('option');
-        option.lang = voice.lang; // Set the language attribute for the option
+        if (voice.lang)
+            option.lang = voice.lang; // Set the language attribute for the option
         option.dataset.country = voice.name.split('-')[0]; //e.g., 'GB' for British English
-        option.value = `${voice.lang.toLowerCase()}-${voice.name}`; // e.g., 'en-US-Standard-A'
+        option.value = `${(_a = voice.lang) === null || _a === void 0 ? void 0 : _a.toLowerCase()}-${voice.name}`; // e.g., 'en-US-Standard-A'
         option.textContent = voice.text;
         voiceName.appendChild(option);
     });
@@ -139,11 +174,77 @@ sendQueryBtn.onclick = askGemini;
  * @returns {Promise<void>} A promise that resolves when the audio is played.
  */
 async function askGemini() {
+    const sourceLanguage = sourceLangSelect.value || 'English';
+    const voice = voiceName.options[voiceName.selectedIndex];
+    const prompt = `${geminiInput.value.trim()}.\n
+  Return the text and the audio file as a JSON object constructed as follows:
+  {
+  "text": ["your answer text"],
+  "audio": ["audio base64 string of the text"]
+  }\n
+  Ensure the output is ONLY the JSON object as indicated.`; // Get the input query from the text area
+    const speech = `Speak in an informative way, as if you were reading from a newspaper or a book. If your answer includes words or sentences in a foreign language other than ${sourceLanguage}, you must read and pronounce these words properly as a native speaker of this foreign language would do. You must read each word of the text in its relevant native language with the relevant accent and pronounciation.`;
+    geminiOutput.textContent = 'Asking Gemini...';
+    const schema = {
+        "type": "object",
+        "properties": {
+            "text": {
+                "type": "string",
+                "description": "the text of your output",
+            },
+            "audio": {
+                "type": "Uint8Array",
+                "description": "the audio according to the speech instructions passed as parameters to the GenAI",
+            },
+            "required": ["text", "audio"]
+        }
+    };
+    const lang = voice.lang || sourceLangSelect.options[sourceLangSelect.selectedIndex].value || 'en';
+    const config = {
+        responseMimeType: "audio/mpeg",
+        responseSchema: schema,
+        systemInstruction: speech, //Instruction about how to read the text 
+        speechConfig: {
+            languageCode: `${lang.toLowerCase()}-${voice.dataset.country || 'GB'}`, // e.g.: en-GB
+            voiceConfig: {
+                prebuiltVoiceConfig: {
+                    voiceName: voiceName.options[voiceName.selectedIndex].value,
+                }
+            },
+        },
+        responseModalities: ['TEXT', 'AUDIO']
+    };
+    const content = [
+        {
+            "role": "user",
+            "parts": [
+                {
+                    "text": prompt
+                }
+            ]
+        }
+    ];
+    const data = await callCloudFunction(ASK_API, { text: content }, { text: config }); // Call the askGemini function with the cloud function URL
+    const response = data.response;
+    if (!response)
+        throw new Error('No response received from Gemini API');
+    geminiOutput.textContent = "";
+    debugger;
+    SENTENCES = [response];
+    await playSentences(SENTENCES, 1, 0, false);
+}
+/**
+ * Asks Gemini API for a response based on the input query.
+ * This function retrieves the access token, constructs the request,
+ * and plays the audio response.
+ * @returns {Promise<void>} A promise that resolves when the audio is played.
+ */
+async function _askGemini() {
     //const accessToken = await getAccessToken();
     //if (!accessToken) return console.log('Could not get accessToken');
     const prompt = `You are a  teacher who is answering a question from a student. The answer must be put in plain text since it will be converted to an audio file by google's text-to-speech api. Remove any * or special charachters from the text, and prepare it to be read loudly by someone to an audience or as a speech in a meeting. The generated text must be formatted as  SSML. If the text includes words in a different language than the main language of the text, these words or sentences must be properly marked with SSML. I need the text-to-speech api to be able to detect and properly render these word in a native pronounciation and accent. The question is: ${geminiInput.value.trim()}.`; // Get the input query from the text area
     geminiOutput.textContent = 'Asking Gemini...';
-    const data = await callCloudFunction(ASK_API, prompt); // Call the askGemini function with the cloud function URL
+    const data = await _callCloudFunction(ASK_API, prompt); // Call the askGemini function with the cloud function URL
     const response = data.response;
     if (!response)
         throw new Error('No response received from Gemini API');
@@ -181,14 +282,13 @@ function removeSsmlMarkup(ssmlText) {
  * This function is a placeholder and should be implemented to fetch the token.
  * @returns {Promise<string>} A promise that resolves to the access token.
  */
-async function getSentences() {
+async function _generateSentences() {
     const number = prompt('How many sentences do you want to get from Gemini? (default is 3)');
     const words = prompt('Do you want to set the maximum number of words for each sentence ?');
     const targetLanguage = targetLangSelect.options[targetLangSelect.selectedIndex].text || prompt("You must define the target language, otherwise it will be set to \"English\"", "English") || "English";
-    let query = geminiInput.value.trim(); // Get the input query from the text area
-    query = `Generate ${isNaN(Number(number)) ? 3 : Number(number)} distinct sentences in the ${targetLanguage} language according to the following guidelines or instructions: ${query}. Each sentence should not exceed ${isNaN(Number(words)) ? 10 : Number(words)} words long. Return the sentences as a JSON array of strings. For example: ["Sentence one.", "Sentence two."]\nEnsure the output is ONLY the JSON array.`;
+    const query = `Generate ${isNaN(Number(number)) ? 3 : Number(number)} distinct sentences in the ${targetLanguage} language according to the following guidelines or instructions: ${geminiInput.value.trim()}. Each sentence should not exceed ${isNaN(Number(words)) ? 10 : Number(words)} words long. Return the sentences as a JSON array of strings. For example: ["Sentence one.", "Sentence two."]\nEnsure the output is ONLY the JSON array.`;
     geminiOutput.textContent = 'Waiting for the sente...'; // Update the UI to indicate fetching
-    const data = await callCloudFunction(SENTENCES_API, query); // Call the askGemini function with the cloud function URL
+    const data = await _callCloudFunction(SENTENCES_API, query); // Call the askGemini function with the cloud function URL
     const sentences = data.sentences; // Extract sentences from the response
     if (!data.sentences)
         throw new Error('No sentences received from Gemini API');
@@ -197,6 +297,85 @@ async function getSentences() {
     const repeatCount = parseInt(repeatCountInput.value) || 1;
     const pause = parseInt(pauseInput.value) * 1000 || 1000;
     await playSentences(sentences, repeatCount, pause, true);
+}
+;
+async function generateSentences() {
+    const number = prompt('How many sentences do you want to get from Gemini? (default is 3)');
+    const words = prompt('Do you want to set the maximum number of words for each sentence ?');
+    geminiOutput.textContent = 'Waiting for the sente...'; // Update the UI to indicate fetching
+    const targetLanguage = targetLangSelect.options[targetLangSelect.selectedIndex].text || prompt("You must define the target language, otherwise it will be set to \"English\"", "English") || "English";
+    //Text Parameters
+    const textPrompt = `Generate ${isNaN(Number(number)) ? 3 : Number(number)} distinct sentences in the ${targetLanguage} language according to the following guidelines or instructions: ${geminiInput.value.trim()}. Each sentence should not exceed ${isNaN(Number(words)) ? 10 : Number(words)} words long.\n
+    Return the generated sentences in a JSON object  constructed like this:
+    {"text": ["sentence 1", "sentence 2", "sentence 3", etc.]}\n
+    Ensure the output is ONLY the JSON object as indicated.`;
+    const textSchema = {
+        "type": "object",
+        "properties": {
+            "text": {
+                "type": "array",
+                "description": "An array of text strings, where each string represents a sentence.",
+                "items": {
+                    "type": "string"
+                }
+            },
+            "required": ["text"]
+        }
+    };
+    const textConfig = {
+        responseMimeType: "application/json",
+        responseSchema: textSchema, //my JSON schema
+    };
+    //Audio Parameters
+    const voice = voiceName.options[voiceName.selectedIndex];
+    const audioPrompt = `Read this ${targetLanguage} setence: XXXX. When reading, follow the speech instructions and configurations (voice, etc) specified in the parmaters of the request. Return the audio of the sentence you've read`;
+    const audioSpeech = `Read the text as if you were a teacher dictating the sentence to a student who is taking notes. Ensure the text is being read in a native ${targetLanguage} accent and pronounciation`;
+    const lang = voice.lang || sourceLangSelect.options[sourceLangSelect.selectedIndex].value || 'en';
+    const audioConfig = {
+        responseMimeType: "audio/mpeg",
+        systemInstruction: audioSpeech, //Instruction about how to read the text 
+        speechConfig: {
+            languageCode: `${lang.toLowerCase()}-${voice.dataset.country || 'GB'}`, // e.g.: en-GB
+            voiceConfig: {
+                prebuiltVoiceConfig: {
+                    voiceName: voiceName.value,
+                }
+            },
+        },
+    };
+    const configs = {
+        text: textConfig,
+        audio: audioConfig
+    };
+    const prompts = {
+        text: getContent(textPrompt),
+        audio: getContent(audioPrompt)
+    };
+    function getContent(query) {
+        return [
+            {
+                "role": "user",
+                "parts": [
+                    {
+                        "text": query
+                    }
+                ]
+            }
+        ];
+    }
+    ;
+    const data = await callCloudFunction(SENTENCES_API, prompts, configs);
+    debugger;
+    const sentences = data;
+    SENTENCES = sentences.text.map((sentence, i) => {
+        return {
+            text: sentence,
+            audio: sentences.audio[i]
+        };
+    });
+    const repeatCount = parseInt(repeatCountInput.value) || 1;
+    const pause = parseInt(pauseInput.value) * 1000 || 1000;
+    await playSentences(SENTENCES, repeatCount, pause, true);
 }
 ;
 async function playSentences(sentences, repeateCount, pause, translate, recurse = false) {
@@ -251,7 +430,7 @@ async function playAudio({ text, audio }, repeatCount = 1, pause = 1000, transla
         if (!translate)
             return null;
         const query = `Translate the following sentence to ${targetLang}: "${text}". Return only the translated sentence without any additional text."`;
-        const data = await callCloudFunction(ASK_API, query, { noAudio: true });
+        const data = await _callCloudFunction(ASK_API, query, { noAudio: true });
         const response = data.response;
         return response.text || null; // Return the translation text or null if not available
     }
@@ -268,13 +447,47 @@ async function playAudio({ text, audio }, repeatCount = 1, pause = 1000, transla
         return new Blob([byteArray], { type: mimeType });
     }
 }
+async function callCloudFunction(url, content, config, params) {
+    // const accessToken = await getAccessToken();
+    if (!prompt)
+        return alert('Please enter a query to send to Gemini');
+    saveToLocalStorage(); // Save settings to localStorage
+    //console.log('Calling Gemini with query:', query, 'and voice params:', voiceConfig, 'and audio config:', audioConfig);
+    try {
+        return await fetchGemini();
+    }
+    catch (error) {
+        console.log('Error fetching Gemini Query: ', error);
+        return null;
+    }
+    async function fetchGemini() {
+        const body = {
+            content: content,
+            config: config,
+            model: GEMINI_MODEL,
+            ...params, // Include ansy additional parameters if needed
+        };
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                //'Authorization': `Bearer ${accessToken}` // If you add authentication
+            },
+            body: JSON.stringify(body)
+        });
+        if (!response.ok) {
+            return;
+        }
+        return await response.json(); // Parse the JSON response
+    }
+}
 /**
  * Calls a cloud function with the provided URL and parameters.
  * @param {string} url - The URL of the cloud function to call.
  * @param {Object} [params] - Optional parameters to include in the request body.
  * @returns {Promise<any>} A promise that resolves to the response from the cloud function.
  */
-async function callCloudFunction(url, query, params) {
+async function _callCloudFunction(url, query, params) {
     // const accessToken = await getAccessToken();
     if (!query)
         return alert('Please enter a query to send to Gemini');
