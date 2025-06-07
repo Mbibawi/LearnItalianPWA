@@ -60,7 +60,7 @@ const SCOPES = 'https://www.googleapis.com/auth/userinfo.email';
 const API_SCOPE = 'https://www.googleapis.com/auth/cloud-platform'; // Or the specific Gemini API scope
 const SENTENCES_API = 'https://gemini-proxy-428231091257.europe-west1.run.app/api/sentences';
 const ASK_API = 'https://gemini-proxy-428231091257.europe-west1.run.app/api/ask';
-const GEMINI_MODEL = "gemini-2.5-flash-preview-tts";
+const GEMINI_MODEL = "gemini-2.5-flash-preview";
 // Gemini Buttons Handleers
 sentencesBtn.onclick = generateSentences;
 sendQueryBtn.onclick = askGemini;
