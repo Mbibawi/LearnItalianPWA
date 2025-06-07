@@ -211,7 +211,6 @@ async function askGemini() {
                 }
             },
         },
-        responseModalities: ['AUDIO']
     };
     const content = [
         {

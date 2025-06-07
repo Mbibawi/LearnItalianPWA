@@ -244,7 +244,6 @@ async function askGemini(): Promise<void | any[]> {
         }
       },
     },
-    responseModalities: ['AUDIO']
   };
 
   const content:PromptContent = [
