@@ -326,7 +326,6 @@ async function generateSentences() {
     };
     //Audio Parameters
     const voice = voiceName.options[voiceName.selectedIndex];
-    const audioPrompt = `${targetLanguage} setence: XXXX.`;
     const audioSpeech = `Read the text as if you were a teacher dictating the sentence to a student who is taking notes. Ensure the text is being read in a native ${targetLanguage} accent and pronounciation.`;
     const lang = voice.lang || sourceLangSelect.options[sourceLangSelect.selectedIndex].value || 'en';
     const audioConfig = {
@@ -347,7 +346,7 @@ async function generateSentences() {
     };
     const prompts = {
         text: getContent(textPrompt),
-        audio: getContent(audioPrompt)
+        audio: getContent("")
     };
     function getContent(query) {
         return [
