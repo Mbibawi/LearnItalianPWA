@@ -1,4 +1,3 @@
-//@ts-nocheck
 const CACHE_NAME = 'my-pwa-cache-v1'; // Increment this version number when you update your app's assets
 const OFFLINE_URL = '/offline.html'; // Path to your custom offline page (recommended for better UX)
 
@@ -25,7 +24,7 @@ self.addEventListener('install', (event) => {
       .then(() => {
         // Force the waiting service worker to become the active service worker
         // This is often desired during development or for simpler apps
-        (self as ServiceWorkerGlobalScope).skipWaiting();
+        (self).skipWaiting();
       })
       .catch((error) => {
         console.error('Service Worker: Caching failed during install', error);
@@ -50,7 +49,7 @@ self.addEventListener('activate', (event) => {
     }).then(() => {
       // Ensure the service worker takes control of clients immediately
       // This is crucial for navigating clients to use the newly activated SW
-      (self as ServiceWorkerGlobalScope).clients.claim();
+      (self).clients.claim();
       console.log('Service Worker: Activated and claimed clients');
     })
   );
