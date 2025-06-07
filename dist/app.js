@@ -195,8 +195,8 @@ async function askGemini() {
                 "type": "Uint8Array",
                 "description": "the audio according to the speech instructions passed as parameters to the GenAI",
             },
-            "required": ["text", "audio"]
-        }
+        },
+        "required": ["text", "audio"]
     };
     const lang = voice.lang || sourceLangSelect.options[sourceLangSelect.selectedIndex].value || 'en';
     const config = {
@@ -318,8 +318,8 @@ async function generateSentences() {
                     "type": "string"
                 }
             },
-            "required": ["text"]
-        }
+        },
+        "required": ["text"]
     };
     const textConfig = {
         responseMimeType: "application/json",

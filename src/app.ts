@@ -226,8 +226,8 @@ async function askGemini(): Promise<void | any[]> {
         "type": "Uint8Array",
         "description": "the audio according to the speech instructions passed as parameters to the GenAI",
       },
-      "required": ["text", "audio"]
-    }
+    },
+    "required": ["text", "audio"]
   };
 
   const lang = voice.lang || sourceLangSelect.options[sourceLangSelect.selectedIndex].value || 'en';
@@ -391,8 +391,8 @@ async function generateSentences() {
           "type": "string"
         }
       },
-      "required": ["text"]
-    }
+    },
+    "required": ["text"]
   };
 
   const textConfig = {
