@@ -401,9 +401,9 @@ async function generateSentences() {
 
   //Audio Parameters
   const voice = voiceName.options[voiceName.selectedIndex];
-  const audioPrompt = `Read this ${targetLanguage} setence: XXXX. When reading, follow the speech instructions and configurations (voice, etc) specified in the parmaters of the request. Return the audio of the sentence you've read`;
+  const audioPrompt = `${targetLanguage} setence: XXXX.`;
 
-  const audioSpeech = `Read the text as if you were a teacher dictating the sentence to a student who is taking notes. Ensure the text is being read in a native ${targetLanguage} accent and pronounciation`;
+  const audioSpeech = `Read the text as if you were a teacher dictating the sentence to a student who is taking notes. Ensure the text is being read in a native ${targetLanguage} accent and pronounciation.`;
 
   const lang = voice.lang || sourceLangSelect.options[sourceLangSelect.selectedIndex].value || 'en';
   
