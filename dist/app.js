@@ -242,9 +242,14 @@ async function __askGemini() {
  * @returns {Promise<void>} A promise that resolves when the audio is played.
  */
 async function askGemini() {
+    var _a;
     //const accessToken = await getAccessToken();
     //if (!accessToken) return console.log('Could not get accessToken');
-    const prompt = `You are a  teacher who is answering a question from a student. The answer must be put in plain text since it will be converted to an audio file by google's text-to-speech api. Remove any * or special charachters from the text, and prepare it to be read loudly by someone to an audience or as a speech in a meeting. The generated text must be formatted as  SSML. If the text includes words in a different language than the main language of the text, these words or sentences must be properly marked with SSML. I need the text-to-speech api to be able to detect and properly render these word in a native pronounciation and accent. The question is: ${geminiInput.value.trim()}.`; // Get the input query from the text area
+    const voice = voiceName.options[voiceName.selectedIndex];
+    let ssml = '';
+    if ((_a = voice.value) === null || _a === void 0 ? void 0 : _a.includes('Chirp3'))
+        ssml = 'The generated text must be formatted as  SSML. If the text includes words in a different language than the main language of the text, these words or sentences must be properly marked with SSML. I need the text-to-speech api to be able to detect and properly render these word in a native pronounciation and accent. ';
+    const prompt = `You are a  teacher who is answering a question from a student. The answer must be put in plain text since it will be converted to an audio file by google's text-to-speech api. Remove any * or special charachters from the text, and prepare it to be read loudly by someone to an audience or as a speech in a meeting. ${ssml}The question is: ${geminiInput.value.trim()}.`; // Get the input query from the text area
     geminiOutput.textContent = 'Asking Gemini...';
     const data = await callCloudFunction(ASK_API, prompt); // Call the askGemini function with the cloud function URL
     const response = data.response;
