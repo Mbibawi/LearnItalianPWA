@@ -1,4 +1,3 @@
-"use strict";
 (function () {
     const swPath = './service-worker.js'; // Define your service worker path here
     /**
@@ -517,10 +516,14 @@ async function callCloudFunction(url, query, params) {
     const audioConfig = {
         audioEncoding: 'MP3', // Or 'LINEAR16' for uncompressed WAV
         speakingRate: voiceRate.valueAsNumber || 1.0, // 0.25 to 4.0 (1.0 is normal)
-        pitch: voicePitch.valueAsNumber || 1.0, // -20.0 to 20.0 (0.0 is normal)
         //  volumeGainDb: 0.0,  // -96.0 to 16.0 (0.0 is normal)
         // effectsProfileId: ['small-bluetooth-speaker-effect'], // Optional, for specific audio profiles
     };
+    if (voice.lang) {
+        //!pitch is not available for the prebuilt-voices. This will give an error.
+        //@ts-ignore
+        audioConfig.pitch = voicePitch.valueAsNumber || 1.0; // -20.0 to 20.0 (0.0 is normal)
+    }
     saveToLocalStorage(); // Save settings to localStorage
     console.log('Calling Gemini with query:', query, 'and voice params:', voiceParams, 'and audio config:', audioConfig);
     try {
@@ -606,4 +609,5 @@ function saveToLocalStorage() {
     localStorage.geminiSettings = JSON.stringify(values);
     console.log('Settings saved to localStorage:', values);
 }
+export {};
 //# sourceMappingURL=app.js.map
