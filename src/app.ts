@@ -66,6 +66,7 @@ const preFilled = [
   pauseInput,
   repeatCountInput,
   voiceRate,
+  voicePitch
 ];
 
 const CLIENT_ID = '428231091257-9tmnknivkkmmtpei2k0jrrvc4kg4g4jh.apps.googleusercontent.com';//Google Client ID for the gemini API
@@ -182,8 +183,6 @@ sendQueryBtn.onclick = askGemini;
     voiceName.appendChild(option);
   });
 })();
-
-
 
 // Initialize the voice selection dropdown with the first option as default
 (function initializeInputs() {
