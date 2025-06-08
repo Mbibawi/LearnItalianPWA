@@ -91,36 +91,36 @@ sendQueryBtn.onclick = askGemini;
   };
   const voices: Option[] = [
     //PreBuilt
-    { text: "PreBuilt - Zephyr (Bright)", name: "Zephyr", lang: undefined },
-    { text: "PreBuilt - Puck (Upbeat)", name: "Puck", lang: undefined },
-    { text: "PreBuilt - Charon (Informative)", name: "Charon", lang: undefined },
-    { text: "PreBuilt- Kore (Firm)", name: "Kore", lang: undefined },
-    { text: "PreBuilt - Fenrir (Excitable)", name: "Fenrir", lang: undefined },
-    { text: "PreBuilt - Leda (Youthful)", name: "Leda", lang: undefined },
-    { text: "PreBuilt - Orus (Firm)", name: "Orus", lang: undefined },
-    { text: "PreBuilt - Aoede (Breezy)", name: "Aoede", lang: undefined },
-    { text: "PreBuilt - Callirrhoe (Easy going)", name: "Callirrhoe", lang: undefined },
-    { text: "PreBuilt - Autonoe (Bright)", name: "Autonoe", lang: undefined },
-    { text: "PreBuilt - Enceladus (Breathy)", name: "Enceladus", lang: undefined },
-    { text: "PreBuilt - Iapetus (Clear)", name: "Iapetus", lang: undefined },
-    { text: "PreBuilt - Umbriel (Easy going)", name: "Umbriel", lang: undefined },
-    { text: "PreBuilt - Algieba (Smooth)", name: "Algieba", lang: undefined },
-    { text: "PreBuilt - Despina (Smooth)", name: "Despina", lang: undefined },
-    { text: "PreBuilt - Erinome (Clear)", name: "Erinome", lang: undefined },
-    { text: "PreBuilt - Algenib (Gravelly)", name: "Algenib", lang: undefined },
-    { text: "PreBuilt - Rasalgethi (Informative)", name: "Rasalgethi", lang: undefined },
-    { text: "PreBuilt - Laomedeia (Upbeat)", name: "Laomedeia", lang: undefined },
-    { text: "PreBuilt - Achernar (Soft)", name: "Achernar", lang: undefined },
-    { text: "PreBuilt - Alnilam (Firm)", name: "Alnilam", lang: undefined },
-    { text: "PreBuilt - Schedar (Even)", name: "Schedar", lang: undefined },
-    { text: "PreBuilt - Gacrux (Mature)", name: "Gacrux", lang: undefined },
-    { text: "PreBuilt - Pulcherrima (Forward)", name: "Pulcherrima", lang: undefined },
-    { text: "PreBuilt - Achird (Friendly)", name: "Achird", lang: undefined },
-    { text: "PreBuilt - Zubenelgenubi (Casual)", name: "Zubenelgenubi", lang: undefined },
-    { text: "PreBuilt - Vindemiatrix (Gentle)", name: "Vindemiatrix", lang: undefined },
-    { text: "PreBuilt - Sadachbia (Lively)", name: "Sadachbia", lang: undefined },
-    { text: "PreBuilt - Sadaltager (Knowledgeable)", name: "Sadaltager", lang: undefined },
-    { text: "PreBuilt - Sulafat (Warm)", name: "Sulafat", lang: undefined },
+    { text: "Zephyr (Bright)", name: "Chirp3-HD-Zephyr", lang: undefined },
+    { text: "Puck (Upbeat)", name: "Chirp3-HD-Puck", lang: undefined },
+    { text: "Charon (Informative)", name: "Chirp3-HD-Charon", lang: undefined },
+    { text: "PreBuilt- Kore (Firm)", name: "Chirp3-HD-Kore", lang: undefined },
+    { text: "Fenrir (Excitable)", name: "Chirp3-HD-Fenrir", lang: undefined },
+    { text: "Leda (Youthful)", name: "Chirp3-HD-Leda", lang: undefined },
+    { text: "Orus (Firm)", name: "Chirp3-HD-Orus", lang: undefined },
+    { text: "Aoede (Breezy)", name: "Chirp3-HD-Aoede", lang: undefined },
+    { text: "Callirrhoe (Easy going)", name: "Chirp3-HD-Callirrhoe", lang: undefined },
+    { text: "Autonoe (Bright)", name: "Chirp3-HD-Autonoe", lang: undefined },
+    { text: "Enceladus (Breathy)", name: "Chirp3-HD-Enceladus", lang: undefined },
+    { text: "Iapetus (Clear)", name: "Chirp3-HD-Iapetus", lang: undefined },
+    { text: "Umbriel (Easy going)", name: "Chirp3-HD-Umbriel", lang: undefined },
+    { text: "Algieba (Smooth)", name: "Chirp3-HD-Algieba", lang: undefined },
+    { text: "Despina (Smooth)", name: "Chirp3-HD-Despina", lang: undefined },
+    { text: "Erinome (Clear)", name: "Chirp3-HD-Erinome", lang: undefined },
+    { text: "Algenib (Gravelly)", name: "Chirp3-HD-Algenib", lang: undefined },
+    { text: "Rasalgethi (Informative)", name: "Chirp3-HD-Rasalgethi", lang: undefined },
+    { text: "Laomedeia (Upbeat)", name: "Chirp3-HD-Laomedeia", lang: undefined },
+    { text: "Achernar (Soft)", name: "Chirp3-HD-Achernar", lang: undefined },
+    { text: "Alnilam (Firm)", name: "Chirp3-HD-Alnilam", lang: undefined },
+    { text: "Schedar (Even)", name: "Chirp3-HD-Schedar", lang: undefined },
+    { text: "Gacrux (Mature)", name: "Chirp3-HD-Gacrux", lang: undefined },
+    { text: "Pulcherrima (Forward)", name: "Chirp3-HD-Pulcherrima", lang: undefined },
+    { text: "Achird (Friendly)", name: "Chirp3-HD-Achird", lang: undefined },
+    { text: "Zubenelgenubi (Casual)", name: "Chirp3-HD-Zubenelgenubi", lang: undefined },
+    { text: "Vindemiatrix (Gentle)", name: "Chirp3-HD-Vindemiatrix", lang: undefined },
+    { text: "Sadachbia (Lively)", name: "Chirp3-HD-Sadachbia", lang: undefined },
+    { text: "Sadaltager (Knowledgeable)", name: "Chirp3-HD-Sadaltager", lang: undefined },
+    { text: "Sulafat (Warm)", name: "Chirp3-HD-Sulafat", lang: undefined },
     // English (US)
     { text: "English (US) (Male)", name: "US-Neural2-A", lang: "EN" },
     { text: "English (US) (Female)", name: "US-Neural2-C", lang: "EN" },
@@ -176,7 +176,7 @@ sendQueryBtn.onclick = askGemini;
     if (voice.lang) option.dataset.country = voice.name.split('-')[0]; //e.g., 'GB' for British English
     
     if (voice.lang) option.value = `${voice.lang?.toLowerCase()}-${voice.name}`; // e.g., 'en-US-Standard-A'
-    else option.value = voice.name;
+    else option.value = voice.name; //e.g. "Chirp3-HD-Zephyr"
 
     option.textContent = voice.text;
     voiceName.appendChild(option);
@@ -618,9 +618,13 @@ async function callCloudFunction(url: string, query?: string, params?: { [key: s
     else return `${lang.toLowerCase()}-${lang.toUpperCase()}`
   }
 
+
+  const code = languageCode(); //e.g.: 'en-US', 'it-IT'
+  const name = voice.lang ? voice.value : `${code}-${voice.value}`;//If the voide does not have its language property set, it means we are using one of the Chirp2-HD voices, e.g.: en-GB-Chirp3-HD-Achernar
+
   const voiceParams = {
-    languageCode: languageCode(), // e.g., 'en-GB' for Grand Britain English
-    name: voice.value,
+    languageCode: code, // e.g., 'en-GB' for Grand Britain English
+    name: name,
   };
 
   const audioConfig = {
