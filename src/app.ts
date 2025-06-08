@@ -173,8 +173,11 @@ sendQueryBtn.onclick = askGemini;
   voices.forEach(voice => {
     const option = document.createElement('option');
     if(voice.lang) option.lang = voice.lang; // Set the language attribute for the option
-    option.dataset.country = voice.name.split('-')[0]; //e.g., 'GB' for British English
-    option.value = `${voice.lang?.toLowerCase()}-${voice.name}`; // e.g., 'en-US-Standard-A'
+    if (voice.lang) option.dataset.country = voice.name.split('-')[0]; //e.g., 'GB' for British English
+    
+    if (voice.lang) option.value = `${voice.lang?.toLowerCase()}-${voice.name}`; // e.g., 'en-US-Standard-A'
+    else option.value = voice.name;
+
     option.textContent = voice.text;
     voiceName.appendChild(option);
   });
@@ -600,10 +603,23 @@ async function callCloudFunction(url: string, query?: string, params?: { [key: s
   if (voiceName.selectedIndex < 0) return alert('Please select a voice to use for the audio playback');
 
   const voice = voiceName.options[voiceName.selectedIndex];
-  if (!voice.lang || !voice.dataset.country || !voice.value) return alert('The selected voice is missing language or country information. Please select a valid voice.');
+  //if (!voice.lang || !voice.dataset.country) return prompt('The selected voice is missing language or country information. Please provide this information');
+  
+  function languageCode() {
+    if (voice.lang && voice.dataset.country)
+      return `${voice.lang.toLowerCase()}-${voice.dataset.country}`;
+
+    const targetLang = targetLangSelect.options[targetLangSelect.selectedIndex];
+    if (!targetLang)
+      return "en-GB";
+    let lang = targetLang.value;
+    if (lang === 'en')
+      return `${lang.toLowerCase()}-GB`;
+    else return `${lang.toLowerCase()}-${lang.toUpperCase()}`
+  }
 
   const voiceParams = {
-    languageCode: `${voice.lang.toLowerCase()}-${voice.dataset.country}`, // e.g., 'en-GB' for Grand Britain English
+    languageCode: languageCode(), // e.g., 'en-GB' for Grand Britain English
     name: voice.value,
   };
 
