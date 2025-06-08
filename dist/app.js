@@ -1,3 +1,4 @@
+"use strict";
 (function () {
     const swPath = './service-worker.js'; // Define your service worker path here
     /**
@@ -609,5 +610,4 @@ function saveToLocalStorage() {
     localStorage.geminiSettings = JSON.stringify(values);
     console.log('Settings saved to localStorage:', values);
 }
-export {};
 //# sourceMappingURL=app.js.map

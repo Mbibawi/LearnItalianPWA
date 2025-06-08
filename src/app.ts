@@ -1,5 +1,3 @@
-import { VoiceConfig } from "../node_modules/@google/genai/dist/genai";
-
 (function () { // Self-executing anonymous function
   const swPath = './service-worker.js'; // Define your service worker path here
 
