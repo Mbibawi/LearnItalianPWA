@@ -86,10 +86,7 @@ function appendAudioPlayer() {
     loop.id = id
     div.appendChild(loop);
     loop.type = 'checkbox';
-    loop.onchange = () => {
-      if (loop.checked) player.loop = true;
-      else player.loop = false;
-    }
+    loop.onchange = () => player.loop = loop.checked;
 
   })();
 
