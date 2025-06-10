@@ -552,6 +552,7 @@ async function playAudio({ text, audio }: Sentence, repeatCount: number = 1, pau
   const audioSrc = `data:audio/mp3;base64,${audio}`;
   audioPlayer.src = '';
   audioPlayer.src = audioSrc;
+  audioPlayer.playbackRate = voiceRate.valueAsNumber;
   //audioPlayer.load();
 
   for (const play of repeat) {

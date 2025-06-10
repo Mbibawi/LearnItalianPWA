@@ -458,6 +458,7 @@ async function playAudio({ text, audio }, repeatCount = 1, pause = 1000, transla
     const audioSrc = `data:audio/mp3;base64,${audio}`;
     audioPlayer.src = '';
     audioPlayer.src = audioSrc;
+    audioPlayer.playbackRate = voiceRate.valueAsNumber;
     //audioPlayer.load();
     for (const play of repeat) {
         audioPlayer.currentTime = 0; // Reset to start
