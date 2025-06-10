@@ -46,6 +46,36 @@ const geminiInput = document.getElementById('geminiQuery');
 const geminiOutput = document.getElementById('geminiResponse');
 const sendQueryBtn = document.getElementById('askGemini');
 const sentencesBtn = document.getElementById('getSentences');
+const audioPlayer = appendAudioPlayer();
+function appendAudioPlayer() {
+    const div = document.createElement('div');
+    div.classList.add('audio');
+    geminiOutput.insertAdjacentElement('beforebegin', div); // Insert the audio player before the output div
+    const player = document.createElement('audio'); // Create or get the audio player
+    div.appendChild(player);
+    player.id = 'audioPlayer';
+    player.style.display = 'block'; // Ensure the audio player is visible
+    player.controls = true; // Enable controls for the audio player
+    player.autoplay = false; // Disable autoplay
+    player.playbackRate = voiceRate.valueAsNumber;
+    (function loop() {
+        const id = 'loop';
+        const label = document.createElement('label');
+        div.appendChild(label);
+        label.textContent = 'Loop';
+        const loop = document.createElement('input');
+        loop.id = id;
+        div.appendChild(loop);
+        loop.type = 'checkbox';
+        loop.onchange = () => {
+            if (loop.checked)
+                player.loop = true;
+            else
+                player.loop = false;
+        };
+    })();
+    return player;
+}
 const preFilled = [
     sourceLangSelect,
     targetLangSelect,
@@ -415,18 +445,12 @@ async function playAudio({ text, audio }, repeatCount = 1, pause = 1000, transla
     if (!audio)
         return alert('No audio to play.');
     const repeat = Array(repeatCount).fill(0).map((_, i) => i); // Create an array to repeat the audio
-    const player = document.getElementById('audioPlayer') || document.createElement('audio'); // Create or get the audio player
-    player.id = 'audioPlayer';
-    player.src = ''; // Clear the source initially
-    player.style.display = 'block'; // Ensure the audio player is visible
-    player.controls = true; // Enable controls for the audio player
-    player.autoplay = false; // Disable autoplay
-    geminiOutput.insertAdjacentElement('beforebegin', player); // Insert the audio player before the output div
     const audioSrc = `data:audio/mp3;base64,${audio}`;
-    player.src = audioSrc;
+    audioPlayer.src = audioSrc;
+    audioPlayer.load();
     for (const play of repeat) {
-        player.currentTime = 0; // Reset to start
-        await player.play();
+        audioPlayer.currentTime = 0; // Reset to start
+        await audioPlayer.play();
         await delay(pause);
     }
     console.log('Audio sentences played successfully.');
@@ -521,7 +545,7 @@ async function callCloudFunction(url, query, params) {
     };
     const audioConfig = {
         audioEncoding: 'MP3', // Or 'LINEAR16' for uncompressed WAV
-        speakingRate: voiceRate.valueAsNumber || 1.0, // 0.25 to 4.0 (1.0 is normal)
+        //speakingRate: voiceRate.valueAsNumber || 1.0,  // 0.25 to 4.0 (1.0 is normal)
         //  volumeGainDb: 0.0,  // -96.0 to 16.0 (0.0 is normal)
         // effectsProfileId: ['small-bluetooth-speaker-effect'], // Optional, for specific audio profiles
     };
