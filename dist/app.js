@@ -455,8 +455,9 @@ async function playAudio({ text, audio }, repeatCount = 1, pause = 1000, transla
         return alert('No audio to play.');
     const repeat = Array(repeatCount).fill(0).map((_, i) => i); // Create an array to repeat the audio
     const audioSrc = `data:audio/mp3;base64,${audio}`;
+    audioPlayer.src = '';
     audioPlayer.src = audioSrc;
-    audioPlayer.load();
+    //audioPlayer.load();
     for (const play of repeat) {
         audioPlayer.currentTime = 0; // Reset to start
         await audioPlayer.play();
