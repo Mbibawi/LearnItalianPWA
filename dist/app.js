@@ -1,4 +1,54 @@
 "use strict";
+/**
+ * This script provides functionality for interacting with the Gemini API to generate sentences,
+ * ask questions, and play audio responses. It includes features such as service worker registration,
+ * voice selection, and audio playback customization. The script is designed for use in a Progressive
+ * Web Application (PWA) for language learning.
+
+ * Key Features:
+ * - Service Worker Registration: Ensures the service worker is registered for offline capabilities.
+ * - Voice Selection: Populates a dropdown with available voices for text-to-speech functionality.
+ * - Sentence Generation: Generates sentences based on user input and plays them as audio.
+ * - Query Handling: Sends user queries to the Gemini API and retrieves responses in text and audio formats.
+ * - Audio Playback: Plays audio responses with customizable playback rate, pitch, and looping options.
+ * - Local Storage: Saves user settings to localStorage for persistence across sessions.
+
+ * Types:
+ * - `Sentence`: Represents a sentence with text and audio data.
+ * - `RequestContent`: Defines the structure for request content sent to the Gemini API.
+ * - `RequestConfig`: Specifies configuration options for text and audio responses.
+ * - `PromptContent`: Represents the structure of prompts sent to the Gemini API.
+
+ * Functions:
+ * - `ensureServiceWorkerRegisteredInternal`: Registers a service worker if not already registered.
+ * - `appendAudioPlayer`: Creates and appends an audio player element to the DOM.
+ * - `askGemini`: Sends a query to the Gemini API and plays the audio response.
+ * - `generateSentences`: Generates sentences using the Gemini API and plays them as audio.
+ * - `playSentences`: Plays a list of sentences with customizable repeat count and pause duration.
+ * - `playAudio`: Plays a single sentence's audio with optional translation and repetition.
+ * - `removeSsmlMarkup`: Removes SSML tags and decodes HTML entities from a string.
+ * - `translateSentence`: Translates a sentence into a specified target language.
+ * - `callCloudFunction`: Sends a request to a cloud function with specified parameters.
+ * - `getAccessToken`: Retrieves an access token for Google APIs.
+ * - `saveToLocalStorage`: Saves user settings to localStorage.
+
+ * Constants:
+ * - `CLIENT_ID`: Google Client ID for authentication.
+ * - `REDIRECT_URI`: Redirect URI for Google Sign-In.
+ * - `SCOPES`: Scopes for Google APIs.
+ * - `API_SCOPE`: Scope for the Gemini API.
+ * - `SENTENCES_API`: URL for the Gemini sentences API.
+ * - `ASK_API`: URL for the Gemini ask API.
+ * - `GEMINI_MODEL`: Model name for the Gemini API.
+
+ * DOM Elements:
+ * - Various input fields and buttons for user interaction, such as language selection, voice configuration, and query submission.
+
+ * Usage:
+ * - Initialize the script by loading the page, which registers the service worker and populates voice options.
+ * - Use the provided buttons to generate sentences or ask questions, and listen to the audio responses.
+ * - Customize playback settings such as voice rate, pitch, and looping using the input fields.
+ */
 (function () {
     const swPath = './service-worker.js'; // Define your service worker path here
     /**
@@ -412,6 +462,22 @@ async function __generateSentences() {
     await playSentences(SENTENCES, repeatCount, pause, true);
 }
 ;
+/**
+ * Plays a sequence of sentences using an audio player, with options for repetition, pauses, and translation.
+ *
+ * @param sentences - An array of `Sentence` objects to be played sequentially.
+ * @param repeateCount - The number of times each sentence should be repeated during playback.
+ * @param pause - The duration of the pause (in milliseconds) between sentences.
+ * @param translate - A boolean indicating whether translations should be included during playback.
+ *
+ * The function temporarily disables the audio player's loop setting to ensure the entire set of sentences is played
+ * sequentially without looping individual sentences. After playback, the loop setting is restored to its original state.
+ *
+ * If the loop setting is enabled, the function recursively replays the entire set of sentences.
+ * Additionally, a double-click event listener is added to `geminiOutput` to allow replaying the sentences by double-clicking.
+ *
+ * Note: The function is asynchronous and relies on `playAudio` for individual sentence playback.
+ */
 async function playSentences(sentences, repeateCount, pause, translate) {
     const loop = audioPlayer.loop; //We save the loop setting
     audioPlayer.loop = false; // We set the loop to false in order to prevent the player from replaying each sentence instead of the whole set of sentences.
@@ -430,19 +496,29 @@ async function playSentences(sentences, repeateCount, pause, translate) {
     }; //adding a "on double click" that will allow to repeat the audio again.
 }
 /**
- * Plays audio for a given text and Base64 encoded audio data.
- * @param {Object} params - The parameters for the audio playback.
- * @param {string} params.text - The text to display in the UI.
- * @param {string} params.audioBase64 - The Base64 encoded audio data.
+ * Plays an audio file associated with a given sentence, optionally translating the sentence and repeating the audio.
+ *
+ * @param {Sentence} params - An object containing the sentence text and audio data.
+ * @param {string} params.text - The text of the sentence to be displayed and optionally translated.
+ * @param {string} params.audio - The Base64-encoded audio data for the sentence.
  * @param {number} [repeatCount=1] - The number of times to repeat the audio playback.
- * @param {number} [pause=1000] - The pause duration between repetitions in milliseconds.
+ * @param {number} [pause=1000] - The pause duration (in milliseconds) between audio repetitions.
+ * @param {boolean} [translate=false] - Whether to translate the sentence text before playing the audio.
+ * @returns {Promise<void>} A promise that resolves when the audio playback and optional translation are complete.
+ *
+ * @throws {Error} Throws an alert if no audio data is provided.
+ *
+ * @example
+ * const sentence = { text: "Ciao", audio: "BASE64_AUDIO_DATA" };
+ * await playAudio(sentence, 2, 1500, true);
  */
 async function playAudio({ text, audio }, repeatCount = 1, pause = 1000, translate = false) {
+    var _a;
     console.log('Playing audio for sentence:', text);
     // Display the text in the UI
     geminiOutput.textContent = `${geminiOutput.textContent} ${text}\n`;
     if (translate) {
-        const lang = sourceLangSelect.textContent || 'English';
+        const lang = ((_a = sourceLangSelect.options[sourceLangSelect.selectedIndex]) === null || _a === void 0 ? void 0 : _a.textContent) || 'English';
         const translation = await translateSentence(text, lang);
         geminiOutput.textContent = `${geminiOutput.textContent} (${lang} = ${translation})\n`; // Display the translation if available
     }
@@ -462,6 +538,15 @@ async function playAudio({ text, audio }, repeatCount = 1, pause = 1000, transla
     function delay(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
+    /**
+     * Translates a given sentence into the specified target language.
+     *
+     * @param text - The sentence to be translated.
+     * @param targetLang - The target language for translation (e.g., "Italian", "French").
+     * @returns A promise that resolves to the translated sentence as a string, or `null` if the target language is not provided or the translation is unavailable.
+     *
+     * @throws An error if the cloud function call fails or returns an unexpected response.
+     */
     async function translateSentence(text, targetLang) {
         if (!targetLang)
             return null;
@@ -518,10 +603,30 @@ async function __callCloudFunction(url, content, config, params) {
     }
 }
 /**
- * Calls a cloud function with the provided URL and parameters.
+ * Sends a query to a cloud function with specified voice and audio configuration parameters.
+ *
  * @param {string} url - The URL of the cloud function to call.
- * @param {Object} [params] - Optional parameters to include in the request body.
- * @returns {Promise<any>} A promise that resolves to the response from the cloud function.
+ * @param {string} [query] - The query string to send to the cloud function. Must be provided.
+ * @param {{ [key: string]: any }} [params] - Additional parameters to include in the request body.
+ * @returns {Promise<any>} - A promise that resolves with the response from the cloud function.
+ *
+ * @throws {Error} - Throws an error if the query is not provided or if a voice is not selected.
+ *
+ * @remarks
+ * - The function dynamically determines the language code and voice name based on user selections.
+ * - Audio configuration includes properties such as `audioEncoding`, `speakingRate`, and optionally `pitch`.
+ * - Saves settings to localStorage before making the request.
+ * - Handles errors during the fetch operation and logs them to the console.
+ *
+ * @example
+ * ```typescript
+ * const response = await callCloudFunction(
+ *   'https://example.com/cloud-function',
+ *   'Translate this text',
+ *   { additionalParam: 'value' }
+ * );
+ * console.log(response);
+ * ```
  */
 async function callCloudFunction(url, query, params) {
     // const accessToken = await getAccessToken();
@@ -568,6 +673,21 @@ async function callCloudFunction(url, query, params) {
         console.log('Error fetching Gemini Query: ', error);
         return null;
     }
+    /**
+     * Fetches data from the Gemini API using a POST request.
+     *
+     * This function sends a JSON payload containing the query, parameters, voice settings,
+     * and audio configuration to the specified URL. It returns the parsed JSON response
+     * from the server.
+     *
+     * @async
+     * @function fetchGemini
+     * @returns {Promise<any>} The parsed JSON response from the Gemini API.
+     *
+     * @example
+     * const response = await fetchGemini();
+     * console.log(response);
+     */
     async function fetchGemini() {
         const body = {
             query: query,
@@ -588,10 +708,31 @@ async function callCloudFunction(url, query, params) {
     }
 }
 /**
- * Retrieves an access token using the Google Sign-In API.
- * If `prompt` is true, it will prompt the user for interaction if necessary.
- * @param {boolean} prompt - Whether to prompt the user for interaction.
- * @returns {Promise<string>} A promise that resolves to the access token.
+ * Retrieves an access token using Google's OAuth2 client.
+ *
+ * @param {boolean} [prompt=false] - Indicates whether to prompt the user for interaction.
+ *                                   If `true`, the user will be prompted to manually log in
+ *                                   or grant consent if required.
+ * @returns {Promise<string>} A promise that resolves to the access token if successful,
+ *                            or rejects with an error if token acquisition fails.
+ *
+ * @throws {Error} If `CLIENT_ID` or `REDIRECT_URI` is not defined, or if user interaction
+ *                 is required but not provided.
+ *
+ * @remarks
+ * - The function attempts to acquire the token silently first. If silent acquisition fails
+ *   due to errors like `consent_required`, `login_required`, or `interaction_required`,
+ *   the user is prompted for interaction.
+ * - Ensure that `CLIENT_ID` and `REDIRECT_URI` are properly defined in your code before
+ *   calling this function.
+ * - The Google Sign-In client (`google.accounts.oauth2.initTokenClient`) must be available
+ *   and properly initialized.
+ *
+ * @example
+ * ```typescript
+ * const token = await getAccessToken();
+ * console.log('Access Token:', token);
+ * ```
  */
 async function getAccessToken(prompt = false) {
     return new Promise((resolve, reject) => {
@@ -639,6 +780,16 @@ async function getAccessToken(prompt = false) {
         }
     });
 }
+/**
+ * Saves the current values of pre-filled inputs to localStorage.
+ *
+ * This function iterates over the `preFilled` array, which contains input elements,
+ * and creates an array of key-value pairs where the key is the input's ID and the value
+ * is the input's current value. The resulting array is then serialized into a JSON string
+ * and stored in `localStorage` under the key `geminiSettings`.
+ *
+ * Additionally, the function logs the saved settings to the console for debugging purposes.
+ */
 function saveToLocalStorage() {
     const values = preFilled.map(input => [input.id, input.value]); // Create an object with the input IDs and their values
     localStorage.geminiSettings = JSON.stringify(values);
