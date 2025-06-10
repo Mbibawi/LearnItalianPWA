@@ -58,6 +58,7 @@ function appendAudioPlayer() {
     player.autoplay = false; // Disable autoplay
     player.playbackRate = voiceRate.valueAsNumber;
     voiceRate.onchange = () => player.playbackRate = voiceRate.valueAsNumber;
+    geminiOutput.onclick = () => player.paused ? player.play() : player.pause();
     (function loop() {
         const id = 'loop';
         const label = document.createElement('label');
@@ -68,15 +69,6 @@ function appendAudioPlayer() {
         div.appendChild(loop);
         loop.type = 'checkbox';
         loop.onchange = () => player.loop = loop.checked;
-    })();
-    (function pause() {
-        return;
-        geminiOutput.onclick = () => {
-            if (player.paused)
-                player.play();
-            else
-                player.pause();
-        };
     })();
     return player;
 }
@@ -294,7 +286,7 @@ async function askGemini() {
     geminiOutput.textContent = "";
     response.text = removeSsmlMarkup(response.text);
     SENTENCES = [response];
-    await playSentences([response], 1, 0, false);
+    await playSentences([response], 1, 0, true);
 }
 /**
  * Removes SSML tags and decodes HTML entities using the browser's DOM parser.
@@ -420,16 +412,21 @@ async function __generateSentences() {
     await playSentences(SENTENCES, repeatCount, pause, true);
 }
 ;
-async function playSentences(sentences, repeateCount, pause, translate, recurse = false) {
+async function playSentences(sentences, repeateCount, pause, translate) {
+    const loop = audioPlayer.loop; //We save the loop setting
+    audioPlayer.loop = false; // We set the loop to false in order to prevent the player from replaying each sentence instead of the whole set of sentences.
     for (const sentence of sentences) {
         await playAudio(sentence, repeateCount, pause, translate); // Collect results
     }
     ;
-    if (recurse)
+    if (loop)
+        await playSentences(sentences, repeateCount, pause, translate); //We replay the whole set of sentences again;
+    audioPlayer.loop = loop; //We reset the audioPlayer loop setting
+    if (geminiOutput.ondblclick)
         return;
     geminiOutput.ondblclick = () => {
         geminiOutput.textContent = '';
-        playSentences(sentences, repeateCount, pause, translate, true);
+        playSentences(sentences, repeateCount, pause, translate);
     }; //adding a "on double click" that will allow to repeat the audio again.
 }
 /**
@@ -444,9 +441,11 @@ async function playAudio({ text, audio }, repeatCount = 1, pause = 1000, transla
     console.log('Playing audio for sentence:', text);
     // Display the text in the UI
     geminiOutput.textContent = `${geminiOutput.textContent} ${text}\n`;
-    const translation = await translateSentence(text, "English", translate);
-    if (translation)
-        geminiOutput.textContent = `${geminiOutput.textContent} (English Translation: ${translation})\n`; // Display the translation if available
+    if (translate) {
+        const lang = sourceLangSelect.textContent || 'English';
+        const translation = await translateSentence(text, lang);
+        geminiOutput.textContent = `${geminiOutput.textContent} (${lang} = ${translation})\n`; // Display the translation if available
+    }
     if (!audio)
         return alert('No audio to play.');
     const repeat = Array(repeatCount).fill(0).map((_, i) => i); // Create an array to repeat the audio
@@ -454,7 +453,6 @@ async function playAudio({ text, audio }, repeatCount = 1, pause = 1000, transla
     audioPlayer.src = '';
     audioPlayer.src = audioSrc;
     audioPlayer.playbackRate = voiceRate.valueAsNumber;
-    //audioPlayer.load();
     for (const play of repeat) {
         audioPlayer.currentTime = 0; // Reset to start
         await audioPlayer.play();
@@ -464,8 +462,8 @@ async function playAudio({ text, audio }, repeatCount = 1, pause = 1000, transla
     function delay(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
-    async function translateSentence(text, targetLang, translate) {
-        if (!translate)
+    async function translateSentence(text, targetLang) {
+        if (!targetLang)
             return null;
         const query = `Translate the following sentence to ${targetLang}: "${text}". Return only the translated sentence without any additional text."`;
         const data = await callCloudFunction(ASK_API, query, { noAudio: true });

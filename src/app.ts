@@ -76,6 +76,7 @@ function appendAudioPlayer() {
   player.playbackRate = voiceRate.valueAsNumber;
 
   voiceRate.onchange = () => player.playbackRate = voiceRate.valueAsNumber;
+  geminiOutput.onclick = () => player.paused ? player.play() : player.pause();
 
   (function loop() {
     const id = 'loop';
@@ -90,13 +91,8 @@ function appendAudioPlayer() {
 
   })();
 
-  (function pause() { 
-    return;
-    geminiOutput.onclick = ()=>{
-      if (player.paused) player.play();
-      else player.pause()
-    }
-  })();
+      
+
   return player
 
 }
@@ -347,7 +343,7 @@ async function askGemini(): Promise<void | any[]> {
   response.text = removeSsmlMarkup(response.text);
 
   SENTENCES = [response];
-  await playSentences([response], 1, 0, false);
+  await playSentences([response], 1, 0, true);
 }
 
 /**
@@ -513,15 +509,25 @@ async function __generateSentences() {
 };
 
 
-async function playSentences(sentences: Sentence[], repeateCount: number, pause: number, translate: boolean, recurse: boolean = false) {
+async function playSentences(sentences: Sentence[], repeateCount: number, pause: number, translate: boolean) {
+  const loop = audioPlayer.loop;//We save the loop setting
+  
+  audioPlayer.loop = false; // We set the loop to false in order to prevent the player from replaying each sentence instead of the whole set of sentences.
+
   for (const sentence of sentences) {
     await playAudio(sentence, repeateCount, pause, translate); // Collect results
   };
-  if (recurse) return;
+
+  if (loop)
+    await playSentences(sentences, repeateCount, pause, translate);//We replay the whole set of sentences again;
+
+  audioPlayer.loop = loop;//We reset the audioPlayer loop setting
+
+  if (geminiOutput.ondblclick) return;
 
   geminiOutput.ondblclick = () => {
     geminiOutput.textContent = '';
-    playSentences(sentences, repeateCount, pause, translate, true)
+    playSentences(sentences, repeateCount, pause, translate)
   };//adding a "on double click" that will allow to repeat the audio again.
 }
 
@@ -537,10 +543,12 @@ async function playAudio({ text, audio }: Sentence, repeatCount: number = 1, pau
   console.log('Playing audio for sentence:', text);
   // Display the text in the UI
   geminiOutput.textContent = `${geminiOutput.textContent} ${text}\n`;
-  const translation = await translateSentence(text, "English", translate);
 
-  if (translation)
-    geminiOutput.textContent = `${geminiOutput.textContent} (English Translation: ${translation})\n`; // Display the translation if available
+  if (translate) {
+    const lang = sourceLangSelect.textContent || 'English';
+    const translation = await translateSentence(text, lang);
+    geminiOutput.textContent = `${geminiOutput.textContent} (${lang} = ${translation})\n`; // Display the translation if available
+  }
 
   if (!audio) return alert('No audio to play.');
 
@@ -550,7 +558,6 @@ async function playAudio({ text, audio }: Sentence, repeatCount: number = 1, pau
   audioPlayer.src = '';
   audioPlayer.src = audioSrc;
   audioPlayer.playbackRate = voiceRate.valueAsNumber;
-  //audioPlayer.load();
 
   for (const play of repeat) {
     audioPlayer.currentTime = 0; // Reset to start
@@ -564,8 +571,8 @@ async function playAudio({ text, audio }: Sentence, repeatCount: number = 1, pau
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 
-  async function translateSentence(text: string, targetLang: string, translate: boolean): Promise<string | null> {
-    if (!translate) return null;
+  async function translateSentence(text: string, targetLang: string): Promise<string | null> {
+    if (!targetLang) return null;
     const query = `Translate the following sentence to ${targetLang}: "${text}". Return only the translated sentence without any additional text."`;
     const data = await callCloudFunction(ASK_API, query, { noAudio: true });
     const response: Sentence = data.response;
