@@ -46,7 +46,6 @@ const geminiInput = document.getElementById('geminiQuery');
 const geminiOutput = document.getElementById('geminiResponse');
 const sendQueryBtn = document.getElementById('askGemini');
 const sentencesBtn = document.getElementById('getSentences');
-const audioPlayer = appendAudioPlayer();
 function appendAudioPlayer() {
     const div = document.createElement('div');
     div.classList.add('audio');
@@ -58,6 +57,7 @@ function appendAudioPlayer() {
     player.controls = true; // Enable controls for the audio player
     player.autoplay = false; // Disable autoplay
     player.playbackRate = voiceRate.valueAsNumber;
+    voiceRate.onchange = () => player.playbackRate = voiceRate.valueAsNumber;
     (function loop() {
         const id = 'loop';
         const label = document.createElement('label');
@@ -210,6 +210,7 @@ sendQueryBtn.onclick = askGemini;
     preFilled
         .forEach(input => { var _a; return input.value = ((_a = settings.find(el => el[0] === input.id)) === null || _a === void 0 ? void 0 : _a[1]) || input.value; }); // Set the value from localStorage or keep the default
 })();
+const audioPlayer = appendAudioPlayer(); //!This must come after the other fields were initialized.
 /**
  * Asks Gemini API for a response based on the input query.
  * This function retrieves the access token, constructs the request,

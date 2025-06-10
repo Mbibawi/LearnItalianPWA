@@ -59,7 +59,7 @@ const geminiOutput = document.getElementById('geminiResponse') as HTMLDivElement
 const sendQueryBtn = document.getElementById('askGemini') as HTMLButtonElement;
 const sentencesBtn = document.getElementById('getSentences') as HTMLButtonElement;
 
-const audioPlayer = appendAudioPlayer();
+
 
 function appendAudioPlayer() {
   const div = document.createElement('div');
@@ -74,6 +74,8 @@ function appendAudioPlayer() {
   player.controls = true; // Enable controls for the audio player
   player.autoplay = false; // Disable autoplay
   player.playbackRate = voiceRate.valueAsNumber;
+
+  voiceRate.onchange = () => player.playbackRate = voiceRate.valueAsNumber;
 
   (function loop() {
     const id = 'loop';
@@ -235,6 +237,8 @@ sendQueryBtn.onclick = askGemini;
   preFilled
     .forEach(input => input.value = settings.find(el => el[0] === input.id)?.[1] || input.value); // Set the value from localStorage or keep the default
 })();
+
+const audioPlayer = appendAudioPlayer();//!This must come after the other fields were initialized.
 
 /**
  * Asks Gemini API for a response based on the input query.
