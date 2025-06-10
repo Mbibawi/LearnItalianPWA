@@ -74,6 +74,15 @@ function appendAudioPlayer() {
                 player.loop = false;
         };
     })();
+    (function pause() {
+        return;
+        geminiOutput.onclick = () => {
+            if (player.paused)
+                player.play();
+            else
+                player.pause();
+        };
+    })();
     return player;
 }
 const preFilled = [

@@ -90,6 +90,14 @@ function appendAudioPlayer() {
     }
 
   })();
+
+  (function pause() { 
+    return;
+    geminiOutput.onclick = ()=>{
+      if (player.paused) player.play();
+      else player.pause()
+    }
+  })();
   return player
 
 }
