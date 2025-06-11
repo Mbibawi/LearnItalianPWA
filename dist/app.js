@@ -479,6 +479,8 @@ async function __generateSentences() {
  * Note: The function is asynchronous and relies on `playAudio` for individual sentence playback.
  */
 async function playSentences(sentences, repeateCount, pause, translate) {
+    const loop = audioPlayer.loop;
+    audioPlayer.loop = false;
     geminiOutput.ondblclick = play;
     await play();
     async function play() {
@@ -489,6 +491,7 @@ async function playSentences(sentences, repeateCount, pause, translate) {
         if (audioPlayer.loop)
             await play(); //We replay the whole set of sentences again;
     }
+    audioPlayer.loop = loop;
 }
 /**
  * Plays an audio file associated with a given sentence, optionally translating the sentence and repeating the audio.
