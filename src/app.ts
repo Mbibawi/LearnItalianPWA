@@ -87,7 +87,7 @@
   ensureServiceWorkerRegisteredInternal();
 })();
 
-type Sentence = { text: string; audio: Uint8Array };
+type Sentence = { text: string; audio: Uint8Array, translation?:string };
 type RequestContent = { text: any[]; audio?: any[] };
 type RequestConfig = { text: { responseMimeType: string; responseSchema?: object; systemInstruction?: string; speechConfig?: object; responseModalities?: string[] }, audio?: { responseMimeType: string; systemInstruction?: string; speechConfig?: object } };
 type PromptContent = {
@@ -576,25 +576,18 @@ async function __generateSentences() {
  * Note: The function is asynchronous and relies on `playAudio` for individual sentence playback.
  */
 async function playSentences(sentences: Sentence[], repeateCount: number, pause: number, translate: boolean) {
-  const loop = audioPlayer.loop;//We save the loop setting
+  
+  geminiOutput.ondblclick = play;
+  await play();
 
-  audioPlayer.loop = false; // We set the loop to false in order to prevent the player from replaying each sentence instead of the whole set of sentences.
+  async function play() {
+    for (const sentence of sentences) {
+      await playAudio(sentence, repeateCount, pause, translate); // Collect results
+    };
+    if (audioPlayer.loop)
+      await play();//We replay the whole set of sentences again;
+  }
 
-  for (const sentence of sentences) {
-    await playAudio(sentence, repeateCount, pause, translate); // Collect results
-  };
-
-  if (loop)
-    await playSentences(sentences, repeateCount, pause, translate);//We replay the whole set of sentences again;
-
-  audioPlayer.loop = loop;//We reset the audioPlayer loop setting
-
-  if (geminiOutput.ondblclick) return;
-
-  geminiOutput.ondblclick = () => {
-    geminiOutput.textContent = '';
-    playSentences(sentences, repeateCount, pause, translate)
-  };//adding a "on double click" that will allow to repeat the audio again.
 }
 
 
@@ -606,7 +599,7 @@ async function playSentences(sentences: Sentence[], repeateCount: number, pause:
  * @param {string} params.audio - The Base64-encoded audio data for the sentence.
  * @param {number} [repeatCount=1] - The number of times to repeat the audio playback.
  * @param {number} [pause=1000] - The pause duration (in milliseconds) between audio repetitions.
- * @param {boolean} [translate=false] - Whether to translate the sentence text before playing the audio.
+ * @param {boolean} [getTranslation=false] - Whether to translate the sentence text before playing the audio.
  * @returns {Promise<void>} A promise that resolves when the audio playback and optional translation are complete.
  * 
  * @throws {Error} Throws an alert if no audio data is provided.
@@ -615,14 +608,20 @@ async function playSentences(sentences: Sentence[], repeateCount: number, pause:
  * const sentence = { text: "Ciao", audio: "BASE64_AUDIO_DATA" };
  * await playAudio(sentence, 2, 1500, true);
  */
-async function playAudio({ text, audio }: Sentence, repeatCount: number = 1, pause: number = 1000, translate: boolean = false): Promise<void> {
+async function playAudio(sentence: Sentence, repeatCount: number = 1, pause: number = 1000, translate: boolean = false): Promise<void> {
+  const { text, audio, translation } = sentence;
   console.log('Playing audio for sentence:', text);
   // Display the text in the UI
   geminiOutput.textContent = `${geminiOutput.textContent} ${text}\n`;
 
-  if (translate) {
+  if (translate && !translation)
+    await getTranslation();
+
+  async function getTranslation() {
     const lang = sourceLangSelect.options[sourceLangSelect.selectedIndex]?.textContent || 'English';
     const translation = await translateSentence(text, lang);
+    if (!translation) return;
+    sentence.translation = translation;
     geminiOutput.textContent = `${geminiOutput.textContent} (${lang} = ${translation})\n`; // Display the translation if available
   }
 

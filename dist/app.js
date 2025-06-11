@@ -479,21 +479,16 @@ async function __generateSentences() {
  * Note: The function is asynchronous and relies on `playAudio` for individual sentence playback.
  */
 async function playSentences(sentences, repeateCount, pause, translate) {
-    const loop = audioPlayer.loop; //We save the loop setting
-    audioPlayer.loop = false; // We set the loop to false in order to prevent the player from replaying each sentence instead of the whole set of sentences.
-    for (const sentence of sentences) {
-        await playAudio(sentence, repeateCount, pause, translate); // Collect results
+    geminiOutput.ondblclick = play;
+    await play();
+    async function play() {
+        for (const sentence of sentences) {
+            await playAudio(sentence, repeateCount, pause, translate); // Collect results
+        }
+        ;
+        if (audioPlayer.loop)
+            await play(); //We replay the whole set of sentences again;
     }
-    ;
-    if (loop)
-        await playSentences(sentences, repeateCount, pause, translate); //We replay the whole set of sentences again;
-    audioPlayer.loop = loop; //We reset the audioPlayer loop setting
-    if (geminiOutput.ondblclick)
-        return;
-    geminiOutput.ondblclick = () => {
-        geminiOutput.textContent = '';
-        playSentences(sentences, repeateCount, pause, translate);
-    }; //adding a "on double click" that will allow to repeat the audio again.
 }
 /**
  * Plays an audio file associated with a given sentence, optionally translating the sentence and repeating the audio.
@@ -503,7 +498,7 @@ async function playSentences(sentences, repeateCount, pause, translate) {
  * @param {string} params.audio - The Base64-encoded audio data for the sentence.
  * @param {number} [repeatCount=1] - The number of times to repeat the audio playback.
  * @param {number} [pause=1000] - The pause duration (in milliseconds) between audio repetitions.
- * @param {boolean} [translate=false] - Whether to translate the sentence text before playing the audio.
+ * @param {boolean} [getTranslation=false] - Whether to translate the sentence text before playing the audio.
  * @returns {Promise<void>} A promise that resolves when the audio playback and optional translation are complete.
  *
  * @throws {Error} Throws an alert if no audio data is provided.
@@ -512,14 +507,20 @@ async function playSentences(sentences, repeateCount, pause, translate) {
  * const sentence = { text: "Ciao", audio: "BASE64_AUDIO_DATA" };
  * await playAudio(sentence, 2, 1500, true);
  */
-async function playAudio({ text, audio }, repeatCount = 1, pause = 1000, translate = false) {
-    var _a;
+async function playAudio(sentence, repeatCount = 1, pause = 1000, translate = false) {
+    const { text, audio, translation } = sentence;
     console.log('Playing audio for sentence:', text);
     // Display the text in the UI
     geminiOutput.textContent = `${geminiOutput.textContent} ${text}\n`;
-    if (translate) {
+    if (translate && !translation)
+        await getTranslation();
+    async function getTranslation() {
+        var _a;
         const lang = ((_a = sourceLangSelect.options[sourceLangSelect.selectedIndex]) === null || _a === void 0 ? void 0 : _a.textContent) || 'English';
         const translation = await translateSentence(text, lang);
+        if (!translation)
+            return;
+        sentence.translation = translation;
         geminiOutput.textContent = `${geminiOutput.textContent} (${lang} = ${translation})\n`; // Display the translation if available
     }
     if (!audio)
