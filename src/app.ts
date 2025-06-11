@@ -110,6 +110,16 @@ const sendQueryBtn = document.getElementById('askGemini') as HTMLButtonElement;
 const sentencesBtn = document.getElementById('getSentences') as HTMLButtonElement;
 
 
+const preFilled = [
+  sourceLangSelect,
+  targetLangSelect,
+  voiceName,
+  pauseInput,
+  repeatCountInput,
+  voiceRate,
+  voicePitch
+];
+
 
 function appendAudioPlayer() {
   const div = document.createElement('div');
@@ -136,6 +146,7 @@ function appendAudioPlayer() {
     const loop = document.createElement('input') as HTMLInputElement;
     loop.id = id
     div.appendChild(loop);
+    preFilled.push(loop);
     loop.type = 'checkbox';
     loop.onchange = () => player.loop = loop.checked;
 
@@ -146,17 +157,6 @@ function appendAudioPlayer() {
   return player
 
 }
-
-const preFilled = [
-  sourceLangSelect,
-  targetLangSelect,
-  voiceName,
-  pauseInput,
-  repeatCountInput,
-  voiceRate,
-  voicePitch
-];
-
 const CLIENT_ID = '428231091257-9tmnknivkkmmtpei2k0jrrvc4kg4g4jh.apps.googleusercontent.com';//Google Client ID for the gemini API
 const REDIRECT_URI = 'https://mbibawi.github.io/LearnItalianPWA/';
 const SCOPES = 'https://www.googleapis.com/auth/userinfo.email';
@@ -585,7 +585,7 @@ async function playSentences(sentences: Sentence[], repeateCount: number, pause:
     for (const sentence of sentences) {
       await playAudio(sentence, repeateCount, pause, translate); // Collect results
     };
-    if (audioPlayer.loop)
+    if (loop)
       await play();//We replay the whole set of sentences again;
   }
   audioPlayer.loop = loop;
