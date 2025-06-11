@@ -576,19 +576,41 @@ async function __generateSentences() {
  * Note: The function is asynchronous and relies on `playAudio` for individual sentence playback.
  */
 async function playSentences(sentences: Sentence[], repeateCount: number, pause: number, translate: boolean) {
+  const lang = sourceLangSelect.options[sourceLangSelect.selectedIndex]?.textContent || 'English';//We will use the source language and translate the text to it
   const loop = audioPlayer.loop;
   audioPlayer.loop = false;
   geminiOutput.ondblclick = play;
+
   await play();
 
   async function play() {
     for (const sentence of sentences) {
-      await playAudio(sentence, repeateCount, pause, translate); // Collect results
+      await playAudio(sentence, repeateCount, pause);
+      if (translate) sentence.translation = await translateSentence(sentence.text, lang)// Collect results
+      geminiOutput.textContent = `${geminiOutput.textContent} ${sentence.text} (${lang} = ${sentence.translation})\n`;
     };
     if (loop)
       await play();//We replay the whole set of sentences again;
   }
+  
   audioPlayer.loop = loop;
+
+  /**
+   * Translates a given sentence into the specified target language.
+   *
+   * @param text - The sentence to be translated.
+   * @param targetLang - The target language for translation (e.g., "Italian", "French").
+   * @returns A promise that resolves to the translated sentence as a string, or `null` if the target language is not provided or the translation is unavailable.
+   *
+   * @throws An error if the cloud function call fails or returns an unexpected response.
+   */
+  async function translateSentence(text: string, targetLang: string): Promise<string> {
+    if (!targetLang) return '';
+    const query = `Translate the following sentence to ${targetLang}: "${text}". Return only the translated sentence without any additional text."`;
+    const data = await callCloudFunction(ASK_API, query, { noAudio: true });
+    const response: Sentence = data?.response;
+    return response?.text || ''; // Return the translation text or null if not available
+  }
 }
 
 
@@ -609,25 +631,12 @@ async function playSentences(sentences: Sentence[], repeateCount: number, pause:
  * const sentence = { text: "Ciao", audio: "BASE64_AUDIO_DATA" };
  * await playAudio(sentence, 2, 1500, true);
  */
-async function playAudio(sentence: Sentence, repeatCount: number = 1, pause: number = 1000, translate: boolean = false): Promise<void> {
-  const { text, audio, translation } = sentence;
-  console.log('Playing audio for sentence:', text);
+async function playAudio(sentence: Sentence, repeatCount: number = 1, pause: number = 1000): Promise<void> {
+  const { text, audio} = sentence;
   // Display the text in the UI
-  geminiOutput.textContent = `${geminiOutput.textContent} ${text}\n`;
-
-  if (translate && !translation)
-    await getTranslation();
-
-  async function getTranslation() {
-    const lang = sourceLangSelect.options[sourceLangSelect.selectedIndex]?.textContent || 'English';
-    const translation = await translateSentence(text, lang);
-    if (!translation) return;
-    sentence.translation = translation;
-    geminiOutput.textContent = `${geminiOutput.textContent} (${lang} = ${translation})\n`; // Display the translation if available
-  }
-
   if (!audio) return alert('No audio to play.');
-
+  
+  console.log('Playing audio for sentence:', text);
   const repeat = Array(repeatCount).fill(0).map((_, i) => i); // Create an array to repeat the audio
 
   const audioSrc = `data:audio/mp3;base64,${audio}`;
@@ -648,25 +657,6 @@ async function playAudio(sentence: Sentence, repeatCount: number = 1, pause: num
   }
 
 
-  /**
-   * Translates a given sentence into the specified target language.
-   *
-   * @param text - The sentence to be translated.
-   * @param targetLang - The target language for translation (e.g., "Italian", "French").
-   * @returns A promise that resolves to the translated sentence as a string, or `null` if the target language is not provided or the translation is unavailable.
-   *
-   * @throws An error if the cloud function call fails or returns an unexpected response.
-   */
-  async function translateSentence(text: string, targetLang: string): Promise<string | null> {
-    if (!targetLang) return null;
-    const query = `Translate the following sentence to ${targetLang}: "${text}". Return only the translated sentence without any additional text."`;
-    const data = await callCloudFunction(ASK_API, query, { noAudio: true });
-    const response: Sentence = data.response;
-    return response.text || null; // Return the translation text or null if not available
-  }
-
-
-  
   function getAudioURL(audio: string, mimeType: string): string {
     // Decode the Base64 audio string
     const audioBlob = b64toBlob(audio, mimeType);
