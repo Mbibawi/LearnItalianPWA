@@ -164,7 +164,8 @@ const API_SCOPE = 'https://www.googleapis.com/auth/cloud-platform'; // Or the sp
 
 const SENTENCES_API = 'https://gemini-proxy-428231091257.europe-west1.run.app/api/sentences'
 const ASK_API = 'https://gemini-proxy-428231091257.europe-west1.run.app/api/ask'
-const GEMINI_MODEL = "gemini-2.5-flash"
+//const GEMINI_MODEL = "gemini-2.5-flash";
+const GEMINI_MODEL = "gemini-2.5-flash-preview-05-20";
 
 
 // Gemini Buttons Handleers
@@ -579,20 +580,31 @@ async function playSentences(sentences: Sentence[], repeateCount: number, pause:
   const lang = sourceLangSelect.options[sourceLangSelect.selectedIndex]?.textContent || 'English';//We will use the source language and translate the text to it
   const loop = audioPlayer.loop;
   audioPlayer.loop = false;
-  geminiOutput.ondblclick = play;
+  geminiOutput.ondblclick = () => play(false); // Allow replaying the sentences by double-clicking on the output div
 
-  await play();
-
-  async function play() {
-    for (const sentence of sentences) {
-      await playAudio(sentence, repeateCount, pause);
-      if (translate) sentence.translation = await translateSentence(sentence.text, lang)// Collect results
-      geminiOutput.textContent = `${geminiOutput.textContent} ${sentence.text} (${lang} = ${sentence.translation})\n`;
-    };
-    if (loop)
-      await play();//We replay the whole set of sentences again;
+  try {
+    if (translate) {
+      for (const sentence of sentences) {
+        sentence.translation = await translateSentence(sentence.text, lang) || '';
+        if (sentence.translation)
+          sentence.translation = `(${lang} = ${sentence.translation})`
+      }
+    }
+    await play(true); // Play the sentences with the specified parameters
+  } catch (error) {
+    console.log('failed to play sentences', error);
   }
-  
+
+  async function play(edit: boolean) {
+    for (const sentence of sentences) {
+      if (edit)
+        geminiOutput.textContent += `${sentence.text} ${sentence.translation}\n`;
+      await playAudio(sentence, repeateCount, pause);
+    }
+    if (loop)
+      await play(false);//We replay the whole set of sentences again;
+  }
+
   audioPlayer.loop = loop;
 
   /**
@@ -612,6 +624,8 @@ async function playSentences(sentences: Sentence[], repeateCount: number, pause:
     return response?.text || ''; // Return the translation text or null if not available
   }
 }
+
+  
 
 
 /**
@@ -637,20 +651,34 @@ async function playAudio(sentence: Sentence, repeatCount: number = 1, pause: num
   if (!audio) return alert('No audio to play.');
   
   console.log('Playing audio for sentence:', text);
-  const repeat = Array(repeatCount).fill(0).map((_, i) => i); // Create an array to repeat the audio
+  //const repeat = Array(repeatCount).fill(0).map((_, i) => i); // Create an array to repeat the audio
 
-  const audioSrc = `data:audio/mp3;base64,${audio}`;
-  audioPlayer.src = '';
-  audioPlayer.src = audioSrc;
+  audioPlayer.src = `data:audio/mp3;base64,${audio}`;
   audioPlayer.playbackRate = voiceRate.valueAsNumber;
 
-  for (const play of repeat) {
-    audioPlayer.currentTime = 0; // Reset to start
-    await audioPlayer.play();
-    await delay(pause);
-  }
+  
+  return new Promise((resolve, reject) => {
+    audioPlayer.onended = onEnded;
+    audioPlayer.onerror = onError; // Handle errors during playback
+    audioPlayer.play();
+    async function onEnded() {
+      repeatCount--;
+      if (repeatCount < 1) {
+        audioPlayer.onended = null;// Remove the event listener to prevent multiple calls
+        audioPlayer.onerror = null;// Remove the error handler
+        resolve(console.log('Audio sentences played successfully.')); // Resolve the promise when playback is done
+      }; 
+      await delay(pause);
+      audioPlayer.currentTime = 0; // Reset the audio player to the beginning
+      await audioPlayer.play();
+    };
 
-  console.log('Audio sentences played successfully.');
+    function onError() {
+      audioPlayer.onended = null; // Remove the event listener to prevent multiple calls
+      reject(new Error('Error playing audio: ' + audioPlayer.error?.message));
+    }
+    
+  });
 
   function delay(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
