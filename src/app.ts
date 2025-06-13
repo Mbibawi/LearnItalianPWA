@@ -359,7 +359,7 @@ async function __askGemini(): Promise<void | any[]> {
   debugger
   SENTENCES = [response]
 
-  await playSentences(SENTENCES, 1, 0, false);
+  await playSentences(SENTENCES, false);
 }
 
 /**
@@ -394,7 +394,7 @@ async function askGemini(): Promise<void | any[]> {
   response.text = removeSsmlMarkup(response.text);
 
   SENTENCES = [response];
-  await playSentences([response], 1, 0, true);
+  await playSentences([response], true);
 }
 
 /**
@@ -455,10 +455,7 @@ async function generateSentences() {
 
   SENTENCES = sentences;
 
-  const repeatCount = parseInt(repeatCountInput.value) || 1;
-  const pause = parseInt(pauseInput.value) * 1000 || 1000
-
-  await playSentences(sentences, repeatCount, pause, true)
+  await playSentences(sentences, true)
 
 };
 
@@ -552,10 +549,8 @@ async function __generateSentences() {
     }
   });
 
-  const repeatCount = parseInt(repeatCountInput.value) || 1;
-  const pause = parseInt(pauseInput.value) * 1000 || 1000;
-
-  await playSentences(SENTENCES, repeatCount, pause, true);
+  
+  await playSentences(SENTENCES, true);
 
 };
 
@@ -576,7 +571,7 @@ async function __generateSentences() {
  * 
  * Note: The function is asynchronous and relies on `playAudio` for individual sentence playback.
  */
-async function playSentences(sentences: Sentence[], repeateCount: number, pause: number, translate: boolean) {
+async function playSentences(sentences: Sentence[], translate: boolean) {
   const lang = sourceLangSelect.options[sourceLangSelect.selectedIndex]?.textContent || 'English';//We will use the source language and translate the text to it
   const loop = audioPlayer.loop;
   audioPlayer.loop = false;
@@ -596,10 +591,12 @@ async function playSentences(sentences: Sentence[], repeateCount: number, pause:
   }
 
   async function play(edit: boolean) {
+    const repeatCount = parseInt(repeatCountInput.value) || 1;
+    const pause = parseInt(pauseInput.value) * 1000 || 1000;
     for (const sentence of sentences) {
       if (edit)
         geminiOutput.textContent += `${sentence.text} ${sentence.translation}\n`;
-      await playAudio(sentence, repeateCount, pause);
+      await playAudio(sentence, repeatCount, pause);
     }
     if (loop)
       await play(false);//We replay the whole set of sentences again;
@@ -624,8 +621,6 @@ async function playSentences(sentences: Sentence[], repeateCount: number, pause:
     return response?.text || ''; // Return the translation text or null if not available
   }
 }
-
-  
 
 
 /**
@@ -663,11 +658,11 @@ async function playAudio(sentence: Sentence, repeatCount: number = 1, pause: num
     audioPlayer.play();
     async function onEnded() {
       repeatCount--;
-      if (!repeatCount) {
+      if (repeatCount<1) {
         audioPlayer.onended = null;// Remove the event listener to prevent multiple calls
         audioPlayer.onerror = null;// Remove the error handler
         console.log('Audio sentences played successfully.');
-        resolve; // Resolve the promise when playback is done
+        resolve(); // Resolve the promise when playback is done
       }; 
       await delay(pause);
       //audioPlayer.currentTime = 0; // Reset the audio player to the beginning

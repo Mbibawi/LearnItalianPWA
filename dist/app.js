@@ -559,11 +559,11 @@ async function playAudio(sentence, repeatCount = 1, pause = 1000) {
         audioPlayer.play();
         async function onEnded() {
             repeatCount--;
-            if (!repeatCount) {
+            if (repeatCount < 1) {
                 audioPlayer.onended = null; // Remove the event listener to prevent multiple calls
                 audioPlayer.onerror = null; // Remove the error handler
                 console.log('Audio sentences played successfully.');
-                resolve; // Resolve the promise when playback is done
+                resolve(); // Resolve the promise when playback is done
             }
             ;
             await delay(pause);
