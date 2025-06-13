@@ -663,13 +663,14 @@ async function playAudio(sentence: Sentence, repeatCount: number = 1, pause: num
     audioPlayer.play();
     async function onEnded() {
       repeatCount--;
-      if (repeatCount < 1) {
+      if (!repeatCount) {
         audioPlayer.onended = null;// Remove the event listener to prevent multiple calls
         audioPlayer.onerror = null;// Remove the error handler
-        resolve(console.log('Audio sentences played successfully.')); // Resolve the promise when playback is done
+        console.log('Audio sentences played successfully.');
+        resolve; // Resolve the promise when playback is done
       }; 
       await delay(pause);
-      audioPlayer.currentTime = 0; // Reset the audio player to the beginning
+      //audioPlayer.currentTime = 0; // Reset the audio player to the beginning
       await audioPlayer.play();
     };
 
