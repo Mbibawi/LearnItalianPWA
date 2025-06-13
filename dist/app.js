@@ -313,7 +313,7 @@ async function __askGemini() {
     geminiOutput.textContent = "";
     debugger;
     SENTENCES = [response];
-    await playSentences(SENTENCES, 1, 0, false);
+    await playSentences(SENTENCES, false);
 }
 /**
  * Asks Gemini API for a response based on the input query.
@@ -338,7 +338,7 @@ async function askGemini() {
     geminiOutput.textContent = "";
     response.text = removeSsmlMarkup(response.text);
     SENTENCES = [response];
-    await playSentences([response], 1, 0, true);
+    await playSentences([response], true);
 }
 /**
  * Removes SSML tags and decodes HTML entities using the browser's DOM parser.
@@ -381,9 +381,7 @@ async function generateSentences() {
         throw new Error('No sentences received from Gemini API');
     geminiOutput.textContent = "";
     SENTENCES = sentences;
-    const repeatCount = parseInt(repeatCountInput.value) || 1;
-    const pause = parseInt(pauseInput.value) * 1000 || 1000;
-    await playSentences(sentences, repeatCount, pause, true);
+    await playSentences(sentences, true);
 }
 ;
 async function __generateSentences() {
@@ -459,9 +457,7 @@ async function __generateSentences() {
             audio: sentences.audio[i]
         };
     });
-    const repeatCount = parseInt(repeatCountInput.value) || 1;
-    const pause = parseInt(pauseInput.value) * 1000 || 1000;
-    await playSentences(SENTENCES, repeatCount, pause, true);
+    await playSentences(SENTENCES, true);
 }
 ;
 /**
@@ -480,7 +476,7 @@ async function __generateSentences() {
  *
  * Note: The function is asynchronous and relies on `playAudio` for individual sentence playback.
  */
-async function playSentences(sentences, repeateCount, pause, translate) {
+async function playSentences(sentences, translate) {
     var _a;
     const lang = ((_a = sourceLangSelect.options[sourceLangSelect.selectedIndex]) === null || _a === void 0 ? void 0 : _a.textContent) || 'English'; //We will use the source language and translate the text to it
     const loop = audioPlayer.loop;
@@ -491,7 +487,7 @@ async function playSentences(sentences, repeateCount, pause, translate) {
             for (const sentence of sentences) {
                 sentence.translation = await translateSentence(sentence.text, lang) || '';
                 if (sentence.translation)
-                    sentence.translation = `(${lang} = ${sentence.translation})`;
+                    sentence.translation = `(${lang} = ${sentence.translation})\n`;
             }
         }
         await play(true); // Play the sentences with the specified parameters
@@ -500,10 +496,12 @@ async function playSentences(sentences, repeateCount, pause, translate) {
         console.log('failed to play sentences', error);
     }
     async function play(edit) {
+        const repeatCount = parseInt(repeatCountInput.value) || 1;
+        const pause = parseInt(pauseInput.value) * 1000 || 1000;
         for (const sentence of sentences) {
             if (edit)
                 geminiOutput.textContent += `${sentence.text} ${sentence.translation}\n`;
-            await playAudio(sentence, repeateCount, pause);
+            await playAudio(sentence, repeatCount, pause);
         }
         if (loop)
             await play(false); //We replay the whole set of sentences again;

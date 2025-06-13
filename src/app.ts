@@ -582,7 +582,7 @@ async function playSentences(sentences: Sentence[], translate: boolean) {
       for (const sentence of sentences) {
         sentence.translation = await translateSentence(sentence.text, lang) || '';
         if (sentence.translation)
-          sentence.translation = `(${lang} = ${sentence.translation})`
+          sentence.translation = `(${lang} = ${sentence.translation})\n`
       }
     }
     await play(true); // Play the sentences with the specified parameters
