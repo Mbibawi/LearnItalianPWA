@@ -159,7 +159,7 @@ function appendAudioPlayer() {
 }
 const CLIENT_ID = '428231091257-9tmnknivkkmmtpei2k0jrrvc4kg4g4jh.apps.googleusercontent.com';//Google Client ID for the gemini API
 const REDIRECT_URI = 'https://mbibawi.github.io/LearnItalianPWA/';
-const SCOPES = 'https://www.googleapis.com/auth/userinfo.email';
+const SCOPES = ['https://www.googleapis.com/auth/userinfo.email'];
 const API_SCOPE = 'https://www.googleapis.com/auth/cloud-platform'; // Or the specific Gemini API scope
 
 const SENTENCES_API = 'https://gemini-proxy-428231091257.europe-west1.run.app/api/sentences'
@@ -861,6 +861,36 @@ async function callCloudFunction(url: string, query?: string, params?: { [key: s
 }
 
 
+let tokenClient: google.accounts.oauth2.TokenClient | null = null;
+
+async function getGoogleAccessTokenSilently(scopes: string[]): Promise<string | null> {
+  return new Promise((resolve, reject) => {
+    if (!window.google || !google.accounts || !google.accounts.oauth2) {
+      return reject(new Error('Google Identity Services not loaded.'));
+    }
+
+    // Initialize the token client once
+    if (!tokenClient) {
+      tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: SCOPES.join(' '), // Join scopes with a space
+        prompt: '', // Important for silent flow
+        callback: (resp) => {
+          if (resp.error || !resp.access_token) {
+            resolve(null); // user not signed in or consent not granted
+          } else {
+            resolve(resp.access_token);
+          }
+        }
+      });
+    }
+
+    // Attempt silent token request
+    tokenClient.requestAccessToken({ prompt: 'none' });
+  });
+}
+
+
 /**
  * Retrieves an access token using Google's OAuth2 client.
  * 
@@ -888,7 +918,7 @@ async function callCloudFunction(url: string, query?: string, params?: { [key: s
  * console.log('Access Token:', token);
  * ```
  */
-async function getAccessToken(prompt: boolean = false): Promise<string> {
+async function _getAccessToken(prompt: boolean = false): Promise<string> {
   return new Promise((resolve, reject) => {
     // Ensure that CLIENT_ID and REDIRECT_URI are defined elsewhere in your code
     if (!CLIENT_ID || !REDIRECT_URI) {
@@ -898,11 +928,10 @@ async function getAccessToken(prompt: boolean = false): Promise<string> {
     type token = { access_token?: string; error?: string; error_description?: string }
     // Initialize the Google Sign-In client
     try {
-      //@ts-expect-error
       const client = google.accounts.oauth2.initTokenClient({
         client_id: CLIENT_ID,
         scope: 'openid profile email', // Adjust scopes as needed
-        redirect_uri: REDIRECT_URI,
+        //redirect_uri: REDIRECT_URI,
         callback: (tokenResponse: token) => {
           if (tokenResponse && tokenResponse.access_token) {
             resolve(tokenResponse.access_token);
@@ -918,7 +947,7 @@ async function getAccessToken(prompt: boolean = false): Promise<string> {
               console.log("Silent token acquisition failed. User interaction needed.");
               // We DO NOT automatically call client.requestAccessToken() here again without a user gesture. This would lead to pop-up blockers.
 
-              if (confirm("Silent token acquisition failed. User interaction needed. Do you agree to manually login to your google account?")) getAccessToken(true);
+              if (confirm("Silent token acquisition failed. User interaction needed. Do you agree to manually login to your google account?")) _getAccessToken(true);
               else reject(new Error(`Failed to retrieve access token: ${tokenResponse.error || 'Unknown error'}`));
 
             }
