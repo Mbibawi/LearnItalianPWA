@@ -145,6 +145,8 @@ sentencesBtn.onclick = generateSentences;
 sendQueryBtn.onclick = askGemini;
 // Language selection handlers
 (function populateVoiceOptions() {
+    // Array of available voice options for the Text-to-Speech API
+    // This list is manually curated based on Google Cloud Text-to-Speech standard voices.
     const voices = [
         //PreBuilt
         { text: "Zephyr (Bright)", name: "Chirp3-HD-Zephyr", lang: undefined },

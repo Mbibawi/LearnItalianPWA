@@ -1,7 +1,7 @@
 {
     "compilerOptions": {
       "target": "es2019",
-      "module": "esnext",
+      "module": "es6",
       "outDir": "./dist",
       "rootDir": "./src",
       "strict": true,
@@ -9,6 +9,7 @@
       "sourceMap": true,
       "lib": ["es2019", "dom"]
     },
+    "typeRoots": ["./node_modules/@types", "node_modules/@google/genai/dist", "node_modules/google-one-tap"],
     "include": ["src", "Exclude/app_OAuth2.ts"],
     "exclude": ["node_modules", "tests", "Exclude"]
   }

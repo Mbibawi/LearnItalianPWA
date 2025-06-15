@@ -1,5 +1,5 @@
 {
-  "start_url": "https://mbibawi.github.io/LearnItalianPWA/",
+  "start_url": "https://mbibawi.github.io/LearnItalianPWA",
   "dir": "auto",
   "name": "Learn Italian With Gemini",
   "theme_color": "#000000",
@@ -12,22 +12,22 @@
   ], 
   "icons": [
     {
-      "src": "/icons/192x192",
+      "src": "icons/192x192",
       "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "/icons/icon-256x256.png",
+      "src": "icons/icon-256x256.png",
       "type": "image/png",
       "sizes": "256x256"
     },
     {
-      "src": "/icons/icon-384x384.png",
+      "src": "icons/icon-384x384.png",
       "type": "image/png",
       "sizes": "384x384"
     },
     {
-      "src": "/icons/icon-512x512.png",
+      "src": "icons/icon-512x512.png",
       "type": "image/png",
       "sizes": "512x512"
     }

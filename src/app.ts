@@ -87,14 +87,6 @@
   ensureServiceWorkerRegisteredInternal();
 })();
 
-type Sentence = { text: string; audio: Uint8Array, translation?:string };
-type RequestContent = { text: any[]; audio?: any[] };
-type RequestConfig = { text: { responseMimeType: string; responseSchema?: object; systemInstruction?: string; speechConfig?: object; responseModalities?: string[] }, audio?: { responseMimeType: string; systemInstruction?: string; speechConfig?: object } };
-type PromptContent = {
-  "role": string;
-  "parts": [{"text": string}]
-}[];
-
 var SENTENCES: Sentence[];
 const sourceLangSelect = document.getElementById('sourceLanguage') as HTMLSelectElement;
 const targetLangSelect = document.getElementById('targetLanguage') as HTMLSelectElement;
@@ -108,7 +100,6 @@ const geminiInput = document.getElementById('geminiQuery') as HTMLInputElement;
 const geminiOutput = document.getElementById('geminiResponse') as HTMLDivElement;
 const sendQueryBtn = document.getElementById('askGemini') as HTMLButtonElement;
 const sentencesBtn = document.getElementById('getSentences') as HTMLButtonElement;
-
 
 const preFilled = [
   sourceLangSelect,
@@ -176,9 +167,7 @@ sendQueryBtn.onclick = askGemini;
 (function populateVoiceOptions() {
   // Array of available voice options for the Text-to-Speech API
   // This list is manually curated based on Google Cloud Text-to-Speech standard voices.
-  type Option = {
-    text: string; name: string; lang: string |undefined
-  };
+
   const voices: Option[] = [
     //PreBuilt
     { text: "Zephyr (Bright)", name: "Chirp3-HD-Zephyr", lang: undefined },
@@ -925,7 +914,7 @@ async function _getAccessToken(prompt: boolean = false): Promise<string> {
       reject(new Error('CLIENT_ID or REDIRECT_URI is not defined.'));
       return;
     }
-    type token = { access_token?: string; error?: string; error_description?: string }
+
     // Initialize the Google Sign-In client
     try {
       const client = google.accounts.oauth2.initTokenClient({
