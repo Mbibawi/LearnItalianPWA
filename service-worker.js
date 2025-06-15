@@ -1,4 +1,4 @@
-const CACHE_NAME = 'my-pwa-cache-v1'; // Increment this version number when you update your app's assets
+const CACHE_NAME = 'learnItalian-cache-v1'; // Increment this version number when you update your app's assets
 const OFFLINE_URL = '/offline.html'; // Path to your custom offline page (recommended for better UX)
 
 // List of essential files that make up your app shell, to be precached
@@ -7,7 +7,7 @@ const urlsToCache = [
   '/index.html',
   '/styles.css',
   '/app.js',
-  '/images/logo.png', // Example: include any crucial images
+  '/icons/icon-192.png', // Example: include any crucial images
   OFFLINE_URL
   // Add other critical static assets here (fonts, icons, etc.)
 ];
