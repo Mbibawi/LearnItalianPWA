@@ -263,8 +263,11 @@ readBtn.onclick = readText;
     geminiInput.insertAdjacentElement('beforebegin', queriesSelect);
     queriesSelect.id = 'savedQueries';
     updateListOfSavedQueries(savedQueries, queriesSelect);
-    queriesSelect.onchange = () => {
+    queriesSelect.onchange = async () => {
         var _a;
+        const savedQueries = await getSavedQueries();
+        if (!savedQueries.length)
+            return;
         const selected = queriesSelect.options[queriesSelect.selectedIndex];
         if (!selected)
             return;
