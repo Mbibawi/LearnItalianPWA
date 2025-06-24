@@ -857,8 +857,8 @@ async function updateSavedQueries(newEntry) {
                 console.warn(`Record count (${currentQueries.length}) has reached its limit: (${MAX_RECORDS} saved queries). Capping will be applied.`);
                 const toDelete = currentQueries.slice(0, currentQueries.length - MAX_RECORDS); //Removing any extra items from the array
                 toDelete
-                    .forEach((query, index) => {
-                    currentQueries.splice(index, 1);
+                    .forEach(query => {
+                    currentQueries.splice(currentQueries.indexOf(query), 1);
                     deleteQuery(query.DBKey || '');
                 });
                 addNew(); // After deletion, add the new record
