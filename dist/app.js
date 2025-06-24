@@ -268,7 +268,7 @@ readBtn.onclick = readText;
         const selected = queriesSelect.options[queriesSelect.selectedIndex];
         if (!selected)
             return;
-        geminiInput.innerHTML = '';
+        geminiOutput.innerHTML = '';
         geminiInput.textContent = selected.textContent;
         SENTENCES = ((_a = savedQueries.find(query => query.DBKey === selected.value)) === null || _a === void 0 ? void 0 : _a.sentences) || [];
         playSentences(SENTENCES, false, true); // Play the saved sentences if available
