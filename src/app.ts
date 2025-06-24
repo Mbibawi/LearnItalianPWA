@@ -285,21 +285,13 @@ readBtn.onclick = readText;
   const queriesSelect = document.createElement('select');
   geminiInput.insertAdjacentElement('beforebegin', queriesSelect);
   queriesSelect.id = 'savedQueries';
-
-  savedQueries
-    .forEach((query: query) => {
-      if (!query.DBKey || query.query) return;
-      const option = document.createElement('option');
-      option.textContent = query.query;
-      option.value = query.DBKey;
-      queriesSelect.appendChild(option);
-    });
+  updateSelectSavedQuery(savedQueries, queriesSelect);
 
   queriesSelect.onchange = () => {
     const selected = queriesSelect.options[queriesSelect.selectedIndex];
     if (!selected) return;
     geminiInput.textContent = selected.textContent;
-    SENTENCES = savedQueries.find(query => query.DBKey === selected.value)?.sentences || [];
+    SENTENCES = savedQueries.find(query => query.DBKey === Number(selected.value))?.sentences || [];
     playSentences(SENTENCES, false, true); // Play the saved sentences if available
   };
 })();
@@ -380,7 +372,7 @@ async function saveSentences(sentences: Sentence[]) {
   async function saveToDB() {
     const savedQueries = await updateSavedQueries(query);
     if (!savedQueries) return alert('No saved queries found');
-    updateSelect(savedQueries)
+    updateSelectSavedQuery(savedQueries, document.getElementById('savedQueries') as HTMLSelectElement)
   }
 
   function saveToLocalStorage() {
@@ -392,20 +384,20 @@ async function saveSentences(sentences: Sentence[]) {
       savedQueries.push(query);
       localStorage.queries = JSON.stringify(savedQueries);
     }
-    updateSelect(savedQueries);
+    updateSelectSavedQuery(savedQueries, document.getElementById('savedQueries') as HTMLSelectElement);
   }
 
-  function updateSelect(savedQueries: query[]) {
-    const queriesSelect = document.getElementById('savedQueries') as HTMLSelectElement;
-    if (!queriesSelect) return;
-    queriesSelect.options.length = 0; // Clear existing options
-    savedQueries.forEach((query: query) => {
-      const option = document.createElement('option');
-      option.textContent = query.query;
-      option.value = query.DBKey || '';
-      queriesSelect.appendChild(option);
-    });
-  }
+}
+function updateSelectSavedQuery(savedQueries: query[], queriesSelect?:HTMLSelectElement) {
+  if (!queriesSelect) return
+  queriesSelect.options.length = 0; // Clear existing options
+  savedQueries.forEach((query: query) => {
+    if (!query.query || !query.DBKey) return;
+    const option = document.createElement('option');
+    option.textContent = query.query;
+    option.value = query.DBKey?.toString();
+    queriesSelect.appendChild(option);
+  });
 }
 
 /**
@@ -942,7 +934,7 @@ async function updateSavedQueries(newEntry: query): Promise<query[]> { // Adjust
       const cursor = (event.target as IDBRequest).result;
       if (cursor) {
         const query = cursor.value as query;
-        query.DBKey = cursor.key as string; // Attach the key to the query object for
+        query.DBKey = cursor.key.toString(); // Attach the key to the query object for
         currentQueries.push(query);
         cursor.continue();
       } else {
@@ -1051,7 +1043,7 @@ async function getSavedQueries(transaction?: IDBTransaction): Promise<query[]> {
       if (cursor) {
         // Attach the key to the item for debugging/display
         const query = cursor.value as query;
-        query.DBKey = cursor.key as string; // Attach the key to the query object
+        query.DBKey = cursor.key.toString(); // Attach the key to the query object
         savedQueries.push(query);
         cursor.continue(); // Move to the next record
       } else {
