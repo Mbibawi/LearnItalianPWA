@@ -855,16 +855,14 @@ async function updateSavedQueries(newEntry) {
             }
             function aboveMax() {
                 console.warn(`Record count (${currentQueries.length}) has reached its limit: (${MAX_RECORDS} saved queries). Capping will be applied.`);
-                const toDelete = currentQueries.slice(0, currentQueries.length - MAX_RECORDS); //Removing any extra items from the array
+                const toDelete = currentQueries.slice(0, currentQueries.length + 1 - MAX_RECORDS); //Removing any extra items from the array: e.g.: if length = 18 this will give slice(0, 9), which will return array of 9 elements fom 0 to 8
                 toDelete
-                    .forEach(query => {
-                    currentQueries.splice(currentQueries.indexOf(query), 1);
-                    deleteQuery(query.DBKey || '');
-                });
+                    .forEach(query => deleteQuery(query.DBKey || null, currentQueries.indexOf(query)));
                 addNew(); // After deletion, add the new record
-                function deleteQuery(dbKey) {
+                function deleteQuery(dbKey, index) {
                     const deleteRequest = store.delete(Number(dbKey));
                     deleteRequest.onsuccess = () => {
+                        currentQueries.splice(index, 1);
                         console.log(`Oldest record with key ${dbKey} deleted successfully.`);
                     };
                     deleteRequest.onerror = (event) => {
