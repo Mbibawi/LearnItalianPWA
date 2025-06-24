@@ -345,9 +345,9 @@ async function askGemini(): Promise<void | any[]> {
 
 async function readText() {
   const text = geminiInput.value.slice(geminiInput.selectionStart || 0, geminiInput.selectionEnd || geminiInput.value.length).trim();
-  const targetLang = targetLangSelect.textContent?.trim();
+  const targetLang = targetLangSelect.options[targetLangSelect.selectedIndex]?.textContent || 'English';
 
-  const prompt = `Read the following ${targetLang} text in a native ${targetLang} accent as if you were giving a speech or a conference to an audience or in a meeting. Just read the text without any comment or introduction. I need just the audio:\n${text}` // Get the input query from the text area
+  const prompt = `Read the following ${targetLang} text in a native ${targetLang} accent as if you were giving a speech or a conference to an audience or in a meeting. Just generate the audio reading of the text without any comment, introduction, or explaination :\n"${text}"` // Get the input query from the text area
 
   const data = await callCloudFunction('ask', prompt); // Call the askGemini function with the cloud function URL
 
