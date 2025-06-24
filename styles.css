@@ -29,6 +29,17 @@ h2 {
   text-align: center;
 }
 
+p.sentence {
+  font-family: "Times New Roman", serif;
+  font-size: 12pt;
+}
+
+p.translation {
+  font-family: "Times New Roman", serif;
+  font-style: italic;
+  color: green;
+}
+
 /* Sections */
 section {
   background-color: #ffffff;
