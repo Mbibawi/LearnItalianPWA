@@ -352,7 +352,9 @@ function updateListOfSavedQueries(savedQueries, queriesSelect) {
     if (!queriesSelect)
         return;
     queriesSelect.options.length = 0; // Clear existing options
-    savedQueries.forEach((query) => {
+    savedQueries
+        .reverse()
+        .forEach((query) => {
         if (!query.query || !query.DBKey)
             return;
         const option = document.createElement('option');

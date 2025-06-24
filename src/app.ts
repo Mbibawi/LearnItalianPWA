@@ -392,7 +392,9 @@ async function saveSentences(sentences: Sentence[]) {
 function updateListOfSavedQueries(savedQueries: query[], queriesSelect?:HTMLSelectElement) {
   if (!queriesSelect) return
   queriesSelect.options.length = 0; // Clear existing options
-  savedQueries.forEach((query: query) => {
+  savedQueries
+    .reverse()
+    .forEach((query: query) => {
     if (!query.query || !query.DBKey) return;
     const option = document.createElement('option');
     option.textContent = query.query;
