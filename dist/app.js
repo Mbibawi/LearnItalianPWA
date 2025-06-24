@@ -264,11 +264,12 @@ readBtn.onclick = readText;
     queriesSelect.id = 'savedQueries';
     savedQueries
         .forEach((query) => {
+        var _a;
         if (!query.query)
             return;
         const option = document.createElement('option');
         option.textContent = query.query;
-        option.value = query.DBKey || '';
+        option.value = ((_a = query.timestamp) === null || _a === void 0 ? void 0 : _a.toString()) || '';
         queriesSelect.appendChild(option);
     });
     queriesSelect.onchange = () => {
@@ -277,7 +278,7 @@ readBtn.onclick = readText;
         if (!selected)
             return;
         geminiInput.textContent = selected.textContent;
-        SENTENCES = ((_a = savedQueries.find(query => query.DBKey === selected.value)) === null || _a === void 0 ? void 0 : _a.sentences) || [];
+        SENTENCES = ((_a = savedQueries.find(query => query.timestamp === Number(selected.value))) === null || _a === void 0 ? void 0 : _a.sentences) || [];
         playSentences(SENTENCES, false, true); // Play the saved sentences if available
     };
 })();

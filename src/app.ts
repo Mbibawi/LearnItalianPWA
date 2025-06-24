@@ -291,7 +291,7 @@ readBtn.onclick = readText;
       if (!query.query) return;
       const option = document.createElement('option');
       option.textContent = query.query;
-      option.value = query.DBKey || '';
+      option.value = query.timestamp?.toString() || '';
       queriesSelect.appendChild(option);
     });
 
@@ -299,7 +299,7 @@ readBtn.onclick = readText;
     const selected = queriesSelect.options[queriesSelect.selectedIndex];
     if (!selected) return;
     geminiInput.textContent = selected.textContent;
-    SENTENCES = savedQueries.find(query => query.DBKey === selected.value)?.sentences || [];
+    SENTENCES = savedQueries.find(query => query.timestamp === Number(selected.value))?.sentences || [];
     playSentences(SENTENCES, false, true); // Play the saved sentences if available
   };
 })();
