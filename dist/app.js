@@ -855,24 +855,25 @@ async function updateSavedQueries(newEntry) {
             }
             function aboveMax() {
                 console.warn(`Record count (${currentQueries.length}) has reached its limit: (${MAX_RECORDS} saved queries). Capping will be applied.`);
-                const oldestKey = currentQueries[0].DBKey || null; // Get the
-                // key of the oldest record
-                console.log(`Replacing oldest record with key: ${oldestKey}`);
-                const deleteRequest = store.delete(Number(oldestKey));
-                deleteRequest.onsuccess = () => {
-                    console.log(`Oldest record with key ${oldestKey} deleted successfully.`);
-                    // Remove the deleted item from the in-memory array
-                    const idx = currentQueries.findIndex(q => q.DBKey === oldestKey);
-                    if (idx > -1)
-                        currentQueries.splice(idx, 1);
-                    addNew(); // After deletion, add the new record
-                };
-                deleteRequest.onerror = (event) => {
-                    const message = `Error deleting oldest record:\n${event.target.error}`;
-                    console.error(message);
-                    alert(message);
-                    reject('Failed to delete oldest record.');
-                };
+                const toDelete = currentQueries.slice(0, currentQueries.length + 1 - MAX_RECORDS); //Removing any extra items from the array
+                toDelete
+                    .forEach((query, index) => {
+                    currentQueries.splice(index, 1);
+                    deleteQuery(query.DBKey || '');
+                });
+                addNew(); // After deletion, add the new record
+                function deleteQuery(dbKey) {
+                    const deleteRequest = store.delete(Number(dbKey));
+                    deleteRequest.onsuccess = () => {
+                        console.log(`Oldest record with key ${dbKey} deleted successfully.`);
+                    };
+                    deleteRequest.onerror = (event) => {
+                        const message = `Error deleting the record which key is ${dbKey}:\n${event.target.error}`;
+                        console.error(message);
+                        alert(message);
+                        reject('Failed to delete one or more of the oldest records.');
+                    };
+                }
             }
             function belowMax() {
                 console.log(`Record count (${currentQueries.length}) is below the limit (${MAX_RECORDS} saved queries). Adding new record without capping.`);

@@ -339,8 +339,8 @@ async function askGemini(): Promise<void | any[]> {
 }
 
 async function readText() {
-  let text = geminiInput.value.slice(geminiInput.selectionStart ||0, geminiInput.selectionEnd ||0).trim();
-  if(!text || !text.length) text = geminiInput.value;
+  let text = geminiInput.value.slice(geminiInput.selectionStart || 0, geminiInput.selectionEnd || 0).trim();
+  if (!text || !text.length) text = geminiInput.value;
   const targetLang = targetLangSelect.options[targetLangSelect.selectedIndex]?.textContent || 'English';
 
   const prompt = `Read the following ${targetLang} text in a native ${targetLang} accent as if you were giving a speech or a conference to an audience or in a meeting. Just read the text without any comment, introduction, or explaination before or after it.\nThe text to be read is :\n"${text}"` // Get the input query from the text area
@@ -392,18 +392,18 @@ async function saveSentences(sentences: Sentence[]) {
   }
 
 }
-function updateListOfSavedQueries(savedQueries: query[], queriesSelect?:HTMLSelectElement) {
+function updateListOfSavedQueries(savedQueries: query[], queriesSelect?: HTMLSelectElement) {
   if (!queriesSelect) return
   queriesSelect.options.length = 0; // Clear existing options
   savedQueries
     .reverse()
     .forEach((query: query) => {
-    if (!query.query || !query.DBKey) return;
-    const option = document.createElement('option');
-    option.textContent = query.query;
-    option.value = query.DBKey;
-    queriesSelect.appendChild(option);
-  });
+      if (!query.query || !query.DBKey) return;
+      const option = document.createElement('option');
+      option.textContent = query.query;
+      option.value = query.DBKey;
+      queriesSelect.appendChild(option);
+    });
 }
 
 /**
@@ -955,25 +955,29 @@ async function updateSavedQueries(newEntry: query): Promise<query[]> { // Adjust
 
       function aboveMax() {
         console.warn(`Record count (${currentQueries.length}) has reached its limit: (${MAX_RECORDS} saved queries). Capping will be applied.`);
-        const oldestKey = currentQueries[0].DBKey || null; // Get the
-        // key of the oldest record
+        const toDelete = currentQueries.slice(0, currentQueries.length +1 - MAX_RECORDS);//Removing any extra items from the array
+        toDelete
+          .forEach((query, index) => {
+            currentQueries.splice(index, 1)
+            deleteQuery(query.DBKey || '');
+          });
 
-        console.log(`Replacing oldest record with key: ${oldestKey}`);
-        const deleteRequest = store.delete(Number(oldestKey)!);
-        deleteRequest.onsuccess = () => {
-          console.log(`Oldest record with key ${oldestKey} deleted successfully.`);
-          // Remove the deleted item from the in-memory array
-          const idx = currentQueries.findIndex(q => q.DBKey === oldestKey);
-          if (idx > -1) currentQueries.splice(idx, 1);
-          addNew();// After deletion, add the new record
-        };
+        addNew();// After deletion, add the new record
 
-        deleteRequest.onerror = (event) => {
-          const message = `Error deleting oldest record:\n${(event.target as IDBRequest).error}`;
-          console.error(message);
-          alert(message);
-          reject('Failed to delete oldest record.');
-        };
+        function deleteQuery(dbKey: string) {
+          const deleteRequest = store.delete(Number(dbKey)!);
+
+          deleteRequest.onsuccess = () => {
+            console.log(`Oldest record with key ${dbKey} deleted successfully.`);
+          };
+
+          deleteRequest.onerror = (event) => {
+            const message = `Error deleting the record which key is ${dbKey}:\n${(event.target as IDBRequest).error}`;
+            console.error(message);
+            alert(message);
+            reject('Failed to delete one or more of the oldest records.');
+          };
+        }
       }
 
       function belowMax() {
