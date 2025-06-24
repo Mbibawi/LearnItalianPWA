@@ -288,10 +288,10 @@ readBtn.onclick = readText;
 
   savedQueries
     .forEach((query: query) => {
-      if (!query.query) return;
+      if (!query.DBKey || query.query) return;
       const option = document.createElement('option');
       option.textContent = query.query;
-      option.value = query.timestamp?.toString() || '';
+      option.value = query.DBKey;
       queriesSelect.appendChild(option);
     });
 
@@ -299,7 +299,7 @@ readBtn.onclick = readText;
     const selected = queriesSelect.options[queriesSelect.selectedIndex];
     if (!selected) return;
     geminiInput.textContent = selected.textContent;
-    SENTENCES = savedQueries.find(query => query.timestamp === Number(selected.value))?.sentences || [];
+    SENTENCES = savedQueries.find(query => query.DBKey === selected.value)?.sentences || [];
     playSentences(SENTENCES, false, true); // Play the saved sentences if available
   };
 })();
@@ -941,7 +941,9 @@ async function updateSavedQueries(newEntry: query): Promise<query[]> { // Adjust
     cursorRequest.onsuccess = (event) => {
       const cursor = (event.target as IDBRequest).result;
       if (cursor) {
-        currentQueries.push(cursor.value as query);
+        const query = cursor.value as query;
+        query.DBKey = cursor.key as string; // Attach the key to the query object for
+        currentQueries.push(query);
         cursor.continue();
       } else {
         // All records have been iterated. Now perform the delete/add logic.
@@ -984,8 +986,8 @@ async function updateSavedQueries(newEntry: query): Promise<query[]> { // Adjust
         addRequest.onsuccess = (addEvent) => {
           const newKey = (addEvent.target as IDBRequest).result;
           console.log('New record added successfully with key:', newKey);
-          newEntry.DBKey = newKey; // Attach the key to the new entry
-          currentQueries.push(newEntry);
+          //newEntry.DBKey = newKey; // Attach the key to the new entry
+          //currentQueries.push(newEntry);
         };
         addRequest.onerror = (addEvent) => {
           console.error('Error adding new data:', (addEvent.target as IDBRequest).error);
@@ -1048,7 +1050,9 @@ async function getSavedQueries(transaction?: IDBTransaction): Promise<query[]> {
       const cursor = (event.target as IDBRequest).result;
       if (cursor) {
         // Attach the key to the item for debugging/display
-        savedQueries.push(cursor.value as query);
+        const query = cursor.value as query;
+        query.DBKey = cursor.key as string; // Attach the key to the query object
+        savedQueries.push(query);
         cursor.continue(); // Move to the next record
       } else {
         resolve(savedQueries); // Resolve when all records are iterated

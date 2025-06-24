@@ -264,12 +264,11 @@ readBtn.onclick = readText;
     queriesSelect.id = 'savedQueries';
     savedQueries
         .forEach((query) => {
-        var _a;
-        if (!query.query)
+        if (!query.DBKey || query.query)
             return;
         const option = document.createElement('option');
         option.textContent = query.query;
-        option.value = ((_a = query.timestamp) === null || _a === void 0 ? void 0 : _a.toString()) || '';
+        option.value = query.DBKey;
         queriesSelect.appendChild(option);
     });
     queriesSelect.onchange = () => {
@@ -278,7 +277,7 @@ readBtn.onclick = readText;
         if (!selected)
             return;
         geminiInput.textContent = selected.textContent;
-        SENTENCES = ((_a = savedQueries.find(query => query.timestamp === Number(selected.value))) === null || _a === void 0 ? void 0 : _a.sentences) || [];
+        SENTENCES = ((_a = savedQueries.find(query => query.DBKey === selected.value)) === null || _a === void 0 ? void 0 : _a.sentences) || [];
         playSentences(SENTENCES, false, true); // Play the saved sentences if available
     };
 })();
@@ -840,7 +839,9 @@ async function updateSavedQueries(newEntry) {
         cursorRequest.onsuccess = (event) => {
             const cursor = event.target.result;
             if (cursor) {
-                currentQueries.push(cursor.value);
+                const query = cursor.value;
+                query.DBKey = cursor.key; // Attach the key to the query object for
+                currentQueries.push(query);
                 cursor.continue();
             }
             else {
@@ -880,8 +881,8 @@ async function updateSavedQueries(newEntry) {
                 addRequest.onsuccess = (addEvent) => {
                     const newKey = addEvent.target.result;
                     console.log('New record added successfully with key:', newKey);
-                    newEntry.DBKey = newKey; // Attach the key to the new entry
-                    currentQueries.push(newEntry);
+                    //newEntry.DBKey = newKey; // Attach the key to the new entry
+                    //currentQueries.push(newEntry);
                 };
                 addRequest.onerror = (addEvent) => {
                     console.error('Error adding new data:', addEvent.target.error);
@@ -933,7 +934,9 @@ async function getSavedQueries(transaction) {
             const cursor = event.target.result;
             if (cursor) {
                 // Attach the key to the item for debugging/display
-                savedQueries.push(cursor.value);
+                const query = cursor.value;
+                query.DBKey = cursor.key; // Attach the key to the query object
+                savedQueries.push(query);
                 cursor.continue(); // Move to the next record
             }
             else {
