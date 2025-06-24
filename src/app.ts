@@ -955,7 +955,7 @@ async function updateSavedQueries(newEntry: query): Promise<query[]> { // Adjust
 
       function aboveMax() {
         console.warn(`Record count (${currentQueries.length}) has reached its limit: (${MAX_RECORDS} saved queries). Capping will be applied.`);
-        const toDelete = currentQueries.slice(0, currentQueries.length - MAX_RECORDS);//Removing any extra items from the array
+        const toDelete = currentQueries.slice(0, currentQueries.length +1 - MAX_RECORDS);//Removing any extra items from the array
         toDelete
           .forEach((query, index) => {
             currentQueries.splice(index, 1)
