@@ -339,7 +339,8 @@ async function askGemini(): Promise<void | any[]> {
 }
 
 async function readText() {
-  const text = geminiInput.value.slice(geminiInput.selectionStart || 0, geminiInput.selectionEnd || geminiInput.value.length).trim();
+  let text = geminiInput.value.slice(geminiInput.selectionStart ||0, geminiInput.selectionEnd ||0).trim();
+  if(!text || !text.length) text = geminiInput.value;
   const targetLang = targetLangSelect.options[targetLangSelect.selectedIndex]?.textContent || 'English';
 
   const prompt = `Read the following ${targetLang} text in a native ${targetLang} accent as if you were giving a speech or a conference to an audience or in a meeting. Just read the text without any comment, introduction, or explaination before or after it.\nThe text to be read is :\n"${text}"` // Get the input query from the text area
@@ -958,7 +959,7 @@ async function updateSavedQueries(newEntry: query): Promise<query[]> { // Adjust
         // key of the oldest record
 
         console.log(`Replacing oldest record with key: ${oldestKey}`);
-        const deleteRequest = store.delete(oldestKey!);
+        const deleteRequest = store.delete(Number(oldestKey)!);
         deleteRequest.onsuccess = () => {
           console.log(`Oldest record with key ${oldestKey} deleted successfully.`);
           // Remove the deleted item from the in-memory array
