@@ -285,13 +285,14 @@ readBtn.onclick = readText;
   const queriesSelect = document.createElement('select');
   geminiInput.insertAdjacentElement('beforebegin', queriesSelect);
   queriesSelect.id = 'savedQueries';
-  updateSelectSavedQuery(savedQueries, queriesSelect);
+  updateListOfSavedQueries(savedQueries, queriesSelect);
 
   queriesSelect.onchange = () => {
     const selected = queriesSelect.options[queriesSelect.selectedIndex];
     if (!selected) return;
+    geminiInput.innerHTML = '';
     geminiInput.textContent = selected.textContent;
-    SENTENCES = savedQueries.find(query => query.DBKey === Number(selected.value))?.sentences || [];
+    SENTENCES = savedQueries.find(query => query.DBKey === selected.value)?.sentences || [];
     playSentences(SENTENCES, false, true); // Play the saved sentences if available
   };
 })();
@@ -372,7 +373,7 @@ async function saveSentences(sentences: Sentence[]) {
   async function saveToDB() {
     const savedQueries = await updateSavedQueries(query);
     if (!savedQueries) return alert('No saved queries found');
-    updateSelectSavedQuery(savedQueries, document.getElementById('savedQueries') as HTMLSelectElement)
+    updateListOfSavedQueries(savedQueries, document.getElementById('savedQueries') as HTMLSelectElement)
   }
 
   function saveToLocalStorage() {
@@ -384,18 +385,18 @@ async function saveSentences(sentences: Sentence[]) {
       savedQueries.push(query);
       localStorage.queries = JSON.stringify(savedQueries);
     }
-    updateSelectSavedQuery(savedQueries, document.getElementById('savedQueries') as HTMLSelectElement);
+    updateListOfSavedQueries(savedQueries, document.getElementById('savedQueries') as HTMLSelectElement);
   }
 
 }
-function updateSelectSavedQuery(savedQueries: query[], queriesSelect?:HTMLSelectElement) {
+function updateListOfSavedQueries(savedQueries: query[], queriesSelect?:HTMLSelectElement) {
   if (!queriesSelect) return
   queriesSelect.options.length = 0; // Clear existing options
   savedQueries.forEach((query: query) => {
     if (!query.query || !query.DBKey) return;
     const option = document.createElement('option');
     option.textContent = query.query;
-    option.value = query.DBKey?.toString();
+    option.value = query.DBKey;
     queriesSelect.appendChild(option);
   });
 }
@@ -452,6 +453,8 @@ async function generateSentences() {
   const data = await callCloudFunction('sentences', query); // Call the askGemini function with the cloud function URL
 
   const sentences: Sentence[] = data.sentences; // Extract sentences from the response
+
+  geminiOutput.innerHTML = "";
 
   if (!data.sentences) throw new Error('No sentences received from Gemini API');
 
@@ -934,7 +937,7 @@ async function updateSavedQueries(newEntry: query): Promise<query[]> { // Adjust
       const cursor = (event.target as IDBRequest).result;
       if (cursor) {
         const query = cursor.value as query;
-        query.DBKey = cursor.key.toString(); // Attach the key to the query object for
+        query.DBKey = cursor.primaryKey.toString(); // Attach the key to the query object for
         currentQueries.push(query);
         cursor.continue();
       } else {
@@ -978,8 +981,8 @@ async function updateSavedQueries(newEntry: query): Promise<query[]> { // Adjust
         addRequest.onsuccess = (addEvent) => {
           const newKey = (addEvent.target as IDBRequest).result;
           console.log('New record added successfully with key:', newKey);
-          //newEntry.DBKey = newKey; // Attach the key to the new entry
-          //currentQueries.push(newEntry);
+          newEntry.DBKey = newKey.toString(); // Attach the key to the new entry
+          currentQueries.push(newEntry);
         };
         addRequest.onerror = (addEvent) => {
           console.error('Error adding new data:', (addEvent.target as IDBRequest).error);
@@ -1043,7 +1046,7 @@ async function getSavedQueries(transaction?: IDBTransaction): Promise<query[]> {
       if (cursor) {
         // Attach the key to the item for debugging/display
         const query = cursor.value as query;
-        query.DBKey = cursor.key.toString(); // Attach the key to the query object
+        query.DBKey = cursor.primaryKey.toString(); // Attach the key to the query object
         savedQueries.push(query);
         cursor.continue(); // Move to the next record
       } else {
@@ -1075,6 +1078,5 @@ async function getSavedQueries(transaction?: IDBTransaction): Promise<query[]> {
         reject('Transaction aborted during getAll (standalone).');
       };
     }
-    // If not ownTransaction, the calling function (updateSavedQueries) manages db.close()
   });
 }

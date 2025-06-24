@@ -262,14 +262,15 @@ readBtn.onclick = readText;
     const queriesSelect = document.createElement('select');
     geminiInput.insertAdjacentElement('beforebegin', queriesSelect);
     queriesSelect.id = 'savedQueries';
-    updateSelectSavedQuery(savedQueries, queriesSelect);
+    updateListOfSavedQueries(savedQueries, queriesSelect);
     queriesSelect.onchange = () => {
         var _a;
         const selected = queriesSelect.options[queriesSelect.selectedIndex];
         if (!selected)
             return;
+        geminiInput.innerHTML = '';
         geminiInput.textContent = selected.textContent;
-        SENTENCES = ((_a = savedQueries.find(query => query.DBKey === Number(selected.value))) === null || _a === void 0 ? void 0 : _a.sentences) || [];
+        SENTENCES = ((_a = savedQueries.find(query => query.DBKey === selected.value)) === null || _a === void 0 ? void 0 : _a.sentences) || [];
         playSentences(SENTENCES, false, true); // Play the saved sentences if available
     };
 })();
@@ -332,7 +333,7 @@ async function saveSentences(sentences) {
         const savedQueries = await updateSavedQueries(query);
         if (!savedQueries)
             return alert('No saved queries found');
-        updateSelectSavedQuery(savedQueries, document.getElementById('savedQueries'));
+        updateListOfSavedQueries(savedQueries, document.getElementById('savedQueries'));
     }
     function saveToLocalStorage() {
         const savedQueries = JSON.parse(localStorage.queries) || [];
@@ -344,20 +345,19 @@ async function saveSentences(sentences) {
             savedQueries.push(query);
             localStorage.queries = JSON.stringify(savedQueries);
         }
-        updateSelectSavedQuery(savedQueries, document.getElementById('savedQueries'));
+        updateListOfSavedQueries(savedQueries, document.getElementById('savedQueries'));
     }
 }
-function updateSelectSavedQuery(savedQueries, queriesSelect) {
+function updateListOfSavedQueries(savedQueries, queriesSelect) {
     if (!queriesSelect)
         return;
     queriesSelect.options.length = 0; // Clear existing options
     savedQueries.forEach((query) => {
-        var _a;
         if (!query.query || !query.DBKey)
             return;
         const option = document.createElement('option');
         option.textContent = query.query;
-        option.value = (_a = query.DBKey) === null || _a === void 0 ? void 0 : _a.toString();
+        option.value = query.DBKey;
         queriesSelect.appendChild(option);
     });
 }
@@ -399,6 +399,7 @@ async function generateSentences() {
     geminiOutput.textContent = 'Waiting for the sentences....'; // Update the UI to indicate fetching
     const data = await callCloudFunction('sentences', query); // Call the askGemini function with the cloud function URL
     const sentences = data.sentences; // Extract sentences from the response
+    geminiOutput.innerHTML = "";
     if (!data.sentences)
         throw new Error('No sentences received from Gemini API');
     await playSentences(sentences, true);
@@ -834,7 +835,7 @@ async function updateSavedQueries(newEntry) {
             const cursor = event.target.result;
             if (cursor) {
                 const query = cursor.value;
-                query.DBKey = cursor.key.toString(); // Attach the key to the query object for
+                query.DBKey = cursor.primaryKey.toString(); // Attach the key to the query object for
                 currentQueries.push(query);
                 cursor.continue();
             }
@@ -875,8 +876,8 @@ async function updateSavedQueries(newEntry) {
                 addRequest.onsuccess = (addEvent) => {
                     const newKey = addEvent.target.result;
                     console.log('New record added successfully with key:', newKey);
-                    //newEntry.DBKey = newKey; // Attach the key to the new entry
-                    //currentQueries.push(newEntry);
+                    newEntry.DBKey = newKey.toString(); // Attach the key to the new entry
+                    currentQueries.push(newEntry);
                 };
                 addRequest.onerror = (addEvent) => {
                     console.error('Error adding new data:', addEvent.target.error);
@@ -929,7 +930,7 @@ async function getSavedQueries(transaction) {
             if (cursor) {
                 // Attach the key to the item for debugging/display
                 const query = cursor.value;
-                query.DBKey = cursor.key.toString(); // Attach the key to the query object
+                query.DBKey = cursor.primaryKey.toString(); // Attach the key to the query object
                 savedQueries.push(query);
                 cursor.continue(); // Move to the next record
             }
@@ -958,7 +959,6 @@ async function getSavedQueries(transaction) {
                 reject('Transaction aborted during getAll (standalone).');
             };
         }
-        // If not ownTransaction, the calling function (updateSavedQueries) manages db.close()
     });
 }
 //# sourceMappingURL=app.js.map

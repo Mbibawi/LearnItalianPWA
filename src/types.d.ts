@@ -19,5 +19,5 @@ type query = {
   query: string;
   sentences: Sentence[];
   timestamp?: number;
-  DBKey?: number
+  DBKey?: string;
 }
