@@ -48,7 +48,7 @@
  * - Use the provided buttons to generate sentences or ask questions, and listen to the audio responses.
  * - Customize playback settings such as voice rate, pitch, and looping using the input fields.
  */
-(function () { // Self-executing anonymous function
+(function () { // Self-executing an onymous function
   const swPath = './service-worker.js'; // Define your service worker path here
 
   /**
@@ -100,6 +100,7 @@ const geminiInput = document.getElementById('geminiQuery') as HTMLInputElement;
 const geminiOutput = document.getElementById('geminiResponse') as HTMLDivElement;
 const sendQueryBtn = document.getElementById('askGemini') as HTMLButtonElement;
 const sentencesBtn = document.getElementById('getSentences') as HTMLButtonElement;
+const readBtn = document.getElementById('readText') as HTMLButtonElement;
 
 const preFilled = [
   sourceLangSelect,
@@ -115,7 +116,7 @@ const preFilled = [
 function appendAudioPlayer() {
   const div = document.createElement('div');
   div.classList.add('audio');
-  
+
   geminiOutput.insertAdjacentElement('beforebegin', div); // Insert the audio player before the output div
   const player = document.createElement('audio'); // Create or get the audio player
   div.appendChild(player);
@@ -143,25 +144,31 @@ function appendAudioPlayer() {
 
   })();
 
-      
+
 
   return player
 
 }
+
 const CLIENT_ID = '428231091257-9tmnknivkkmmtpei2k0jrrvc4kg4g4jh.apps.googleusercontent.com';//Google Client ID for the gemini API
 const REDIRECT_URI = 'https://mbibawi.github.io/LearnItalianPWA/';
 const SCOPES = ['https://www.googleapis.com/auth/userinfo.email'];
 const API_SCOPE = 'https://www.googleapis.com/auth/cloud-platform'; // Or the specific Gemini API scope
 
-const SENTENCES_API = 'https://gemini-proxy-428231091257.europe-west1.run.app/api/sentences'
-const ASK_API = 'https://gemini-proxy-428231091257.europe-west1.run.app/api/ask'
+
+const BASE_URL = 'https://gemini-proxy-428231091257.europe-west1.run.app/api/'
 //const GEMINI_MODEL = "gemini-2.5-flash";
 const GEMINI_MODEL = "gemini-2.5-flash-preview-05-20";
+
+const DB_NAME = 'LearnItalian'; // The name of your database
+const DB_VERSION = 1;         // Increment this if you change your object stores (e.g., add new ones)
+const STORE_NAME = 'queries';
 
 
 // Gemini Buttons Handleers
 sentencesBtn.onclick = generateSentences;
 sendQueryBtn.onclick = askGemini;
+readBtn.onclick = readText;
 
 // Language selection handlers
 (function populateVoiceOptions() {
@@ -251,9 +258,9 @@ sendQueryBtn.onclick = askGemini;
 
   voices.forEach(voice => {
     const option = document.createElement('option');
-    if(voice.lang) option.lang = voice.lang; // Set the language attribute for the option
+    if (voice.lang) option.lang = voice.lang; // Set the language attribute for the option
     if (voice.lang) option.dataset.country = voice.name.split('-')[0]; //e.g., 'GB' for British English
-    
+
     if (voice.lang) option.value = `${voice.lang?.toLowerCase()}-${voice.name}`; // e.g., 'en-US-Standard-A'
     else option.value = voice.name; //e.g. "Chirp3-HD-Zephyr"
 
@@ -271,85 +278,33 @@ sendQueryBtn.onclick = askGemini;
     .forEach(input => input.value = settings.find(el => el[0] === input.id)?.[1] || input.value); // Set the value from localStorage or keep the default
 })();
 
+(async function ListSavedQueries() {
+  const savedQueries = await getSavedQueries();
+  if (!savedQueries.length) return;
+
+  const queriesSelect = document.createElement('select');
+  geminiInput.insertAdjacentElement('beforebegin', queriesSelect);
+  queriesSelect.id = 'savedQueries';
+
+  savedQueries
+    .forEach((query: query) => {
+      if (!query.query) return;
+      const option = document.createElement('option');
+      option.textContent = query.query;
+      option.value = query.DBKey || '';
+      queriesSelect.appendChild(option);
+    });
+
+  queriesSelect.onchange = () => {
+    const selected = queriesSelect.options[queriesSelect.selectedIndex];
+    if (!selected) return;
+    geminiInput.textContent = selected.textContent;
+    SENTENCES = savedQueries.find(query => query.DBKey === selected.value)?.sentences || [];
+    playSentences(SENTENCES, false, true); // Play the saved sentences if available
+  };
+})();
+
 const audioPlayer = appendAudioPlayer();//!This must come after the other fields were initialized.
-
-/**
- * Asks Gemini API for a response based on the input query.
- * This function retrieves the access token, constructs the request,
- * and plays the audio response.
- * @returns {Promise<void>} A promise that resolves when the audio is played.
- */
-async function __askGemini(): Promise<void | any[]> {
-
-  const sourceLanguage = sourceLangSelect.value || 'English';
-  const voice = voiceName.options[voiceName.selectedIndex];
-
-  const prompt = `${geminiInput.value.trim()}.\n
-  Return the text and the audio file as a JSON object constructed as follows:
-  {
-  "text": ["your answer text"],
-  "audio": ["audio base64 string of the text"]
-  }\n
-  Ensure the output is ONLY the JSON object as indicated.` // Get the input query from the text area
-
-  const speech = `Speak in an informative way, as if you were reading from a newspaper or a book. If your answer includes words or sentences in a foreign language other than ${sourceLanguage}, you must read and pronounce these words properly as a native speaker of this foreign language would do. You must read each word of the text in its relevant native language with the relevant accent and pronounciation.`
-
-  geminiOutput.textContent = 'Asking Gemini...';
-
-
-  const schema = {
-    "type": "object",
-    "properties": {
-      "text": {
-        "type": "string",
-        "description": "the text of your output",
-      },
-      "audio": {
-        "type": "Uint8Array",
-        "description": "the audio according to the speech instructions passed as parameters to the GenAI",
-      },
-    },
-    "required": ["text", "audio"]
-  };
-
-  const lang = voice.lang || sourceLangSelect.options[sourceLangSelect.selectedIndex].value || 'en';
-
-  const config = {
-    responseMimeType: "audio/mpeg",
-    responseSchema: schema,
-    systemInstruction: speech, //Instruction about how to read the text 
-    speechConfig: {
-      languageCode: `${lang.toLowerCase()}-${voice.dataset.country || 'GB'}`,// e.g.: en-GB
-      voiceConfig: {
-        prebuiltVoiceConfig: {
-          voiceName: voiceName.options[voiceName.selectedIndex].value,
-        }
-      },
-    },
-  };
-
-  const content:PromptContent = [
-    {
-      "role": "user",
-      "parts": [
-        {
-          "text": prompt
-        }
-      ]
-    }
-  ];
-  const data = await __callCloudFunction(ASK_API, { text: content }, { text: config }); // Call the askGemini function with the cloud function URL
-
-  const response: Sentence = data.response;
-
-  if (!response) throw new Error('No response received from Gemini API');
-
-  geminiOutput.textContent = "";
-  debugger
-  SENTENCES = [response]
-
-  await playSentences(SENTENCES, false);
-}
 
 /**
  * Asks Gemini API for a response based on the input query.
@@ -362,28 +317,95 @@ async function askGemini(): Promise<void | any[]> {
   //const accessToken = await getAccessToken();
   //if (!accessToken) return console.log('Could not get accessToken');
   const voice = voiceName.options[voiceName.selectedIndex];
-  
+
   let ssml = '';
   if (!voice.value?.includes('Chirp3'))
-    ssml = 'The generated text must be formatted as  SSML. If the text includes words in a different language than the main language of the text, these words or sentences must be properly marked with SSML. I need the text-to-speech api to be able to detect and properly render these word in a native pronounciation and accent. ';
+    ssml = 'The generated text must be formatted as  SSML. If the text includes words in a different language than the main language of the text, these words or sentences must be properly marked with SSML. I need the text-to-speech api to be able to detect and properly render these words in a native pronounciation and accent. ';
 
-  const prompt = `You are a  teacher who is answering a question from a student. The answer must be put in plain text since it will be converted to an audio file by google's text-to-speech api. Remove any * or special charachters from the text, and prepare it to be read loudly by someone to an audience or as a speech in a meeting. ${ssml}The question is: ${geminiInput.value.trim()}.` // Get the input query from the text area
+  const prompt = `You are a  teacher who is answering a question from a student. The answer must be put in plain text since it will be converted into an audio file by google's text-to-speech api. Remove any * or special charachters from the text, and prepare it for being read loudly by someone to an audience or as a speech in a meeting. ${ssml}The question is: ${geminiInput.value.trim()}.` // Get the input query from the text area
 
+  geminiOutput.innerHTML = '';
   geminiOutput.textContent = 'Asking Gemini...';
 
 
-  const data = await callCloudFunction(ASK_API, prompt); // Call the askGemini function with the cloud function URL
+  const data = await callCloudFunction('ask', prompt); // Call the askGemini function with the cloud function URL
 
   const response: Sentence = data.response;
 
   if (!response) throw new Error('No response received from Gemini API');
 
-  geminiOutput.textContent = "";
+  geminiOutput.innerHTML = "";
 
   response.text = removeSsmlMarkup(response.text);
 
-  SENTENCES = [response];
   await playSentences([response], true);
+
+  await saveSentences([response]);
+}
+
+async function readText() {
+  const text = geminiInput.value.slice(geminiInput.selectionStart || 0, geminiInput.selectionEnd || geminiInput.value.length).trim();
+  const targetLang = targetLangSelect.textContent?.trim();
+
+  const prompt = `Read the following ${targetLang} text in a native ${targetLang} accent as if you were giving a speech or a conference to an audience or in a meeting:\n${text}` // Get the input query from the text area
+
+  const data = await callCloudFunction('ask', prompt); // Call the askGemini function with the cloud function URL
+
+  const response: Sentence = data.response;
+
+  if (!response) throw new Error('No response received from Gemini API');
+
+  await playSentences([response], false, false);
+
+  await saveSentences([response]);
+
+}
+
+function _getSavedQueries() {
+  if (!localStorage.queries) return [];
+  return JSON.parse(localStorage.queries).map((query: query) => query.query) as query[]
+}
+
+async function saveSentences(sentences: Sentence[]) {
+  if (!sentences || !sentences.length) return alert('No sentences to save');
+  const query: query = {
+    query: geminiInput.value.trim(),
+    sentences: sentences
+  }
+  SENTENCES = sentences;
+  await saveToDB();
+  return;
+  //saveToLocalStorage();
+
+  async function saveToDB() {
+    const savedQueries = await updateSavedQueries(query);
+    if (!savedQueries) return alert('No saved queries found');
+    updateSelect(savedQueries)
+  }
+
+  function saveToLocalStorage() {
+    const savedQueries = JSON.parse(localStorage.queries) || [];
+    if (savedQueries.length) {
+      savedQueries.push(query);
+      localStorage.queries = JSON.stringify(savedQueries);
+    } else {
+      savedQueries.push(query);
+      localStorage.queries = JSON.stringify(savedQueries);
+    }
+    updateSelect(savedQueries);
+  }
+
+  function updateSelect(savedQueries: query[]) {
+    const queriesSelect = document.getElementById('savedQueries') as HTMLSelectElement;
+    if (!queriesSelect) return;
+    queriesSelect.options.length = 0; // Clear existing options
+    savedQueries.forEach((query: query) => {
+      const option = document.createElement('option');
+      option.textContent = query.query;
+      option.value = query.DBKey || '';
+      queriesSelect.appendChild(option);
+    });
+  }
 }
 
 /**
@@ -433,115 +455,20 @@ async function generateSentences() {
 
   const query = `Generate ${isNaN(Number(number)) ? 3 : Number(number)} distinct sentences in the ${targetLanguage} language according to the following guidelines or instructions: ${geminiInput.value.trim()}. Each sentence should not exceed ${isNaN(Number(words)) ? 10 : Number(words)} words long. Return the sentences as a JSON array of strings. For example: ["Sentence one.", "Sentence two."]\nEnsure the output is ONLY the JSON array.`;
 
-  geminiOutput.textContent = 'Waiting for the sente...'; // Update the UI to indicate fetching
-  const data = await callCloudFunction(SENTENCES_API, query); // Call the askGemini function with the cloud function URL
+  geminiOutput.innerHTML = ''; // Update the UI to indicate fetching
+  geminiOutput.textContent = 'Waiting for the sentences....'; // Update the UI to indicate fetching
+  const data = await callCloudFunction('sentences', query); // Call the askGemini function with the cloud function URL
 
   const sentences: Sentence[] = data.sentences; // Extract sentences from the response
 
   if (!data.sentences) throw new Error('No sentences received from Gemini API');
 
-  geminiOutput.textContent = "";
-
-  SENTENCES = sentences;
 
   await playSentences(sentences, true)
 
+  await saveSentences(sentences)
 };
 
-async function __generateSentences() {
-
-  const number = prompt('How many sentences do you want to get from Gemini? (default is 3)');
-
-  const words = prompt('Do you want to set the maximum number of words for each sentence ?');
-
-  geminiOutput.textContent = 'Waiting for the sente...'; // Update the UI to indicate fetching
-
-  const targetLanguage = targetLangSelect.options[targetLangSelect.selectedIndex].text || prompt("You must define the target language, otherwise it will be set to \"English\"", "English") || "English";
-
-  //Text Parameters
-  const textPrompt = `Generate ${isNaN(Number(number)) ? 3 : Number(number)} distinct sentences in the ${targetLanguage} language according to the following guidelines or instructions: ${geminiInput.value.trim()}. Each sentence should not exceed ${isNaN(Number(words)) ? 10 : Number(words)} words long.\n
-    Return the generated sentences in a JSON object  constructed like this:
-    {"text": ["sentence 1", "sentence 2", "sentence 3", etc.]}\n
-    Ensure the output is ONLY the JSON object as indicated.`;
-
-  const textSchema = {
-    "type": "object",
-    "properties": {
-      "text": {
-        "type": "array",
-        "description": "An array of text strings, where each string represents a sentence.",
-        "items": {
-          "type": "string"
-        }
-      },
-    },
-    "required": ["text"]
-  };
-
-  const textConfig = {
-    responseMimeType: "application/json",
-    responseSchema: textSchema, //my JSON schema
-  };
-
-  //Audio Parameters
-  const voice = voiceName.options[voiceName.selectedIndex];
-
-  const audioSpeech = `Read the text as if you were a teacher dictating the sentence to a student who is taking notes. Ensure the text is being read in a native ${targetLanguage} accent and pronounciation.`;
-
-  const lang = voice.lang || sourceLangSelect.options[sourceLangSelect.selectedIndex].value || 'en';
-  
-  const audioConfig = {
-    responseMimeType: "audio/mpeg",
-    systemInstruction: audioSpeech, //Instruction about how to read the text 
-    speechConfig: {
-      languageCode: `${lang.toLowerCase()}-${voice.dataset.country || 'GB'}`,// e.g.: en-GB
-      voiceConfig: {
-        prebuiltVoiceConfig: {
-          voiceName: voiceName.value,
-        }
-      },
-    },
-  };
-
-  const configs = {
-    text: textConfig,
-    audio: audioConfig
-  };
-
-  const prompts = {
-    text: getContent(textPrompt),
-    audio: getContent("")
-  };
-
-  function getContent(query: string) {
-    return [
-      {
-        "role": "user",
-        "parts": [
-          {
-            "text": query
-          }
-        ]
-      }
-    ] as PromptContent
-  };
-
- 
-  const data = await __callCloudFunction(SENTENCES_API, prompts, configs);
-  debugger
-  const sentences = data as { text: string[], audio: Uint8Array[] };
-
-  SENTENCES = sentences.text.map((sentence, i) => {
-    return {
-      text: sentence,
-      audio: sentences.audio[i]
-    }
-  });
-
-  
-  await playSentences(SENTENCES, true);
-
-};
 
 
 /**
@@ -560,9 +487,11 @@ async function __generateSentences() {
  * 
  * Note: The function is asynchronous and relies on `playAudio` for individual sentence playback.
  */
-async function playSentences(sentences: Sentence[], translate: boolean) {
+async function playSentences(sentences: Sentence[], translate: boolean, edit: boolean = true) {
+  if (!sentences?.length) return;
   const lang = sourceLangSelect.options[sourceLangSelect.selectedIndex]?.textContent || 'English';//We will use the source language and translate the text to it
-  const loop = audioPlayer.loop;
+  const loop = document.getElementById('loop') as HTMLInputElement;
+  if (!loop) console.warn('Loop input not found');
   audioPlayer.loop = false;
   geminiOutput.ondblclick = () => play(false); // Allow replaying the sentences by double-clicking on the output div
 
@@ -574,24 +503,46 @@ async function playSentences(sentences: Sentence[], translate: boolean) {
           sentence.translation = `(${lang} = ${sentence.translation})\n`
       }
     }
-    await play(true); // Play the sentences with the specified parameters
+    await play(edit); // Play the sentences with the specified parameters
   } catch (error) {
     console.log('failed to play sentences', error);
   }
 
+  audioPlayer.loop = loop?.checked;
+  
   async function play(edit: boolean) {
     const repeatCount = parseInt(repeatCountInput.value) || 1;
     const pause = parseInt(pauseInput.value) * 1000 || 1000;
     for (const sentence of sentences) {
       if (edit)
-        geminiOutput.textContent += `${sentence.text} ${sentence.translation}\n`;
+        showText(sentence); // Insert the sentence text and translation into the output div
       await playAudio(sentence, repeatCount, pause);
     }
-    if (loop)
+    if (loop?.checked)
       await play(false);//We replay the whole set of sentences again;
   }
 
-  audioPlayer.loop = loop;
+
+  /**
+   * Displays a sentence and its translation in the output div.
+   * @param sentence 
+   * @returns 
+   */
+  function showText(sentence: Sentence) {
+    const p1 = document.createElement('p');
+    p1.classList.add('sentence');
+    p1.textContent = sentence.text;
+    geminiOutput.appendChild(p1);
+
+    if (!sentence.translation) return;
+
+    const p2 = document.createElement('p');
+    p2.textContent = sentence.translation;
+    p2.classList.add('translation');// Add a class for styling the translation
+    p2.lang = lang.toLowerCase(); // Set the language attribute for the translation
+    geminiOutput.appendChild(p2);
+  }
+
 
   /**
    * Translates a given sentence into the specified target language.
@@ -605,7 +556,7 @@ async function playSentences(sentences: Sentence[], translate: boolean) {
   async function translateSentence(text: string, targetLang: string): Promise<string> {
     if (!targetLang) return '';
     const query = `Translate the following sentence to ${targetLang}: "${text}". Return only the translated sentence without any additional text."`;
-    const data = await callCloudFunction(ASK_API, query, { noAudio: true });
+    const data = await callCloudFunction('ask', query, { noAudio: true });
     const response: Sentence = data?.response;
     return response?.text || ''; // Return the translation text or null if not available
   }
@@ -630,29 +581,29 @@ async function playSentences(sentences: Sentence[], translate: boolean) {
  * await playAudio(sentence, 2, 1500, true);
  */
 async function playAudio(sentence: Sentence, repeatCount: number = 1, pause: number = 1000): Promise<void> {
-  const { text, audio} = sentence;
+  const { text, audio } = sentence;
   // Display the text in the UI
   if (!audio) return alert('No audio to play.');
-  
+
   console.log('Playing audio for sentence:', text);
   //const repeat = Array(repeatCount).fill(0).map((_, i) => i); // Create an array to repeat the audio
 
   audioPlayer.src = `data:audio/mp3;base64,${audio}`;
   audioPlayer.playbackRate = voiceRate.valueAsNumber;
 
-  
+
   return new Promise((resolve, reject) => {
     audioPlayer.onended = onEnded;
     audioPlayer.onerror = onError; // Handle errors during playback
     audioPlayer.play();
     async function onEnded() {
       repeatCount--;
-      if (repeatCount<1) {
+      if (repeatCount < 1) {
         audioPlayer.onended = null;// Remove the event listener to prevent multiple calls
         audioPlayer.onerror = null;// Remove the error handler
         console.log('Audio sentences played successfully.');
         resolve(); // Resolve the promise when playback is done
-      }; 
+      };
       await delay(pause);
       //audioPlayer.currentTime = 0; // Reset the audio player to the beginning
       await audioPlayer.play();
@@ -662,7 +613,7 @@ async function playAudio(sentence: Sentence, repeatCount: number = 1, pause: num
       audioPlayer.onended = null; // Remove the event listener to prevent multiple calls
       reject(new Error('Error playing audio: ' + audioPlayer.error?.message));
     }
-    
+
   });
 
   function delay(ms: number): Promise<void> {
@@ -682,52 +633,6 @@ async function playAudio(sentence: Sentence, repeatCount: number = 1, pause: num
     const byteArray = new Uint8Array(byteNumbers);
     return new Blob([byteArray], { type: mimeType });
   }
-}
-
-
-async function __callCloudFunction(
-  url: string,
-  content: RequestContent,
-  config: RequestConfig,
-  params?: { [key: string]: any }): Promise<any> {
-  // const accessToken = await getAccessToken();
-
-  if (!prompt) return alert('Please enter a query to send to Gemini');
-
-
-  saveToLocalStorage(); // Save settings to localStorage
-  //console.log('Calling Gemini with query:', query, 'and voice params:', voiceConfig, 'and audio config:', audioConfig);
-
-  try {
-    return await fetchGemini();
-  } catch (error) {
-    console.log('Error fetching Gemini Query: ', error)
-    return null
-  }
-
-  async function fetchGemini() {
-    const body = {
-      content: content,
-      config: config,
-      model: GEMINI_MODEL,
-      ...params, // Include ansy additional parameters if needed
-    };
-    const response = await fetch(url, { // <-- This is your "client" call
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        //'Authorization': `Bearer ${accessToken}` // If you add authentication
-      },
-      body: JSON.stringify(body)
-    });
-
-    if (!response.ok) {
-      return
-    }
-    return await response.json(); // Parse the JSON response
-
-  }
-
 }
 
 
@@ -765,7 +670,7 @@ async function callCloudFunction(url: string, query?: string, params?: { [key: s
   if (voiceName.selectedIndex < 0) return alert('Please select a voice to use for the audio playback');
 
   const voice = voiceName.options[voiceName.selectedIndex];
-  
+
   function languageCode() {
     if (voice.lang && voice.dataset.country)
       return `${voice.lang.toLowerCase()}-${voice.dataset.country}`;
@@ -833,7 +738,7 @@ async function callCloudFunction(url: string, query?: string, params?: { [key: s
       voiceParams: voiceParams,
       audioConfig: audioConfig,
     };
-    const response = await fetch(url, { // <-- This is your "client" call
+    const response = await fetch(`${BASE_URL}${url}`, { // <-- This is your "client" call
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -969,4 +874,211 @@ function saveToLocalStorage() {
   const values = preFilled.map(input => [input.id, input.value]); // Create an object with the input IDs and their values
   localStorage.geminiSettings = JSON.stringify(values);
   console.log('Settings saved to localStorage:', values);
+}
+
+/**
+ * Opens a connection to the IndexedDB database.
+ * If the database or object store doesn't exist, it will be created.
+ * @returns A Promise that resolves with the IDBDatabase instance.
+ */
+function openDatabase(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+    request.onupgradeneeded = (event) => {
+      const db = (event.target as IDBOpenDBRequest).result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        const store = db.createObjectStore(STORE_NAME, { autoIncrement: true });
+        // Still create an index on 'timestamp' for efficient sorting by age
+        store.createIndex('timestamp', 'timestamp', { unique: true });
+        console.log(`Object store '${STORE_NAME}' created with autoIncrement and 'timestamp' index.`);
+      } else {
+        // If the store already exists but needs an index (e.g., upgrading from v2 to v3)
+        const store = request.transaction!.objectStore(STORE_NAME);
+        if (!store.indexNames.contains('timestamp')) {
+          // CRITICAL FIX: Changed unique to false for consistency.
+          store.createIndex('timestamp', 'timestamp', { unique: true });
+          console.log(`'timestamp' index added to '${STORE_NAME}'.`);
+        }
+      }
+    };
+
+    request.onsuccess = (event) => {
+      resolve((event.target as IDBOpenDBRequest).result);
+    };
+
+    request.onerror = (event) => {
+      console.error('IndexedDB error:', (event.target as IDBOpenDBRequest).error);
+      reject('Failed to open IndexedDB.');
+    };
+  });
+}
+
+/**
+* Saves a new record to the store using autoIncrement.
+* If the number of records exceeds MAX_RECORDS, the oldest record (based on timestamp)
+* is replaced by the new one. Otherwise, the new record is simply added.
+* Assumes data has a 'timestamp' property.
+* @param newEntry The new data object to save. It must have a 'timestamp' property.
+* @returns A Promise that resolves when the operation is complete.
+*/
+async function updateSavedQueries(newEntry: query): Promise<query[]> { // Adjusted return type for consistency
+  const MAX_RECORDS = 10;
+  // Ensure the new data has a timestamp
+  newEntry.timestamp = Date.now();
+
+  const db = await openDatabase(); // Open DB connection
+
+  return new Promise(async (resolve, reject) => {
+    const transaction = db.transaction(STORE_NAME, 'readwrite');
+    const store = transaction.objectStore(STORE_NAME);
+    const timestampIndex = store.index('timestamp'); // Access the timestamp index
+
+    const currentQueries: query[] = []; // To build the final list of items
+
+    const cursorRequest = timestampIndex.openCursor(null, 'next'); // 'next' for ascending timestamp order
+
+    cursorRequest.onsuccess = (event) => {
+      const cursor = (event.target as IDBRequest).result;
+      if (cursor) {
+        currentQueries.push(cursor.value as query);
+        cursor.continue();
+      } else {
+        // All records have been iterated. Now perform the delete/add logic.
+        if (currentQueries.length >= MAX_RECORDS)
+          aboveMax();
+        else
+          belowMax();
+      }
+
+      function aboveMax() {
+        console.warn(`Record count (${currentQueries.length}) has reached its limit: (${MAX_RECORDS} saved queries). Capping will be applied.`);
+        const oldestKey = currentQueries[0].DBKey || null; // Get the
+        // key of the oldest record
+
+        console.log(`Replacing oldest record with key: ${oldestKey}`);
+        const deleteRequest = store.delete(oldestKey!);
+        deleteRequest.onsuccess = () => {
+          console.log(`Oldest record with key ${oldestKey} deleted successfully.`);
+          // Remove the deleted item from the in-memory array
+          const idx = currentQueries.findIndex(q => q.DBKey === oldestKey);
+          if (idx > -1) currentQueries.splice(idx, 1);
+          addNew();// After deletion, add the new record
+        };
+
+        deleteRequest.onerror = (event) => {
+          const message = `Error deleting oldest record:\n${(event.target as IDBRequest).error}`;
+          console.error(message);
+          alert(message);
+          reject('Failed to delete oldest record.');
+        };
+      }
+
+      function belowMax() {
+        console.log(`Record count (${currentQueries.length}) is below the limit (${MAX_RECORDS} saved queries). Adding new record without capping.`);
+        addNew(); // Add the new record without capping
+      }
+
+      function addNew() {
+        const addRequest = store.add(newEntry);
+        addRequest.onsuccess = (addEvent) => {
+          const newKey = (addEvent.target as IDBRequest).result;
+          console.log('New record added successfully with key:', newKey);
+          newEntry.DBKey = newKey; // Attach the key to the new entry
+          currentQueries.push(newEntry);
+        };
+        addRequest.onerror = (addEvent) => {
+          console.error('Error adding new data:', (addEvent.target as IDBRequest).error);
+          reject('Failed to add new data.');
+        };
+
+      }
+    };
+
+    cursorRequest.onerror = (event) => {
+      console.error('Error during cursor iteration for capping:', (event.target as IDBRequest).error);
+      reject('Failed to iterate records for capping.');
+    };
+
+    // Important: Ensure the transaction completes and handles DB closing
+    transaction.oncomplete = () => {
+      db.close(); // Close DB only when the *main* transaction completes
+      console.log('Transaction completed successfully.');
+      // Sort the final array by timestamp before resolving, for consistent output
+      resolve(currentQueries);
+    };
+
+    transaction.onerror = (event) => {
+      db.close(); // Close on error too
+      console.error('Transaction error during capped autoIncrement save:', (event.target as IDBTransaction).error);
+      reject('Transaction failed during capped autoIncrement save.');
+    };
+
+    transaction.onabort = (event) => {
+      db.close(); // Close on abort too
+      console.warn('Transaction aborted:', (event.target as IDBTransaction).error);
+      reject('Transaction aborted.');
+    };
+  });
+}
+
+
+/**
+* Retrieves all items from the specified IndexedDB object store.
+* @param transaction (Optional) An existing IDBTransaction to use.
+* @returns A Promise that resolves with an array of all retrieved data objects.
+*/
+async function getSavedQueries(transaction?: IDBTransaction): Promise<query[]> { // Adjusted return type
+  let db: IDBDatabase | null = null;
+  let ownTransaction = transaction ? false : true; // Track if we opened the transaction ourselves
+
+  // If no transaction is provided, open a new connection and create a transaction
+  if (!transaction) {
+    db = await openDatabase(); // Await openDatabase
+    transaction = db.transaction(STORE_NAME, 'readonly');
+  }
+
+  const store = transaction!.objectStore(STORE_NAME);
+  const savedQueries: query[] = []; // Collect data with keys
+
+  return new Promise((resolve, reject) => {
+    const request = store.openCursor(); // Cursor by primary key
+
+    request.onsuccess = (event) => {
+      const cursor = (event.target as IDBRequest).result;
+      if (cursor) {
+        // Attach the key to the item for debugging/display
+        savedQueries.push(cursor.value as query);
+        cursor.continue(); // Move to the next record
+      } else {
+        resolve(savedQueries); // Resolve when all records are iterated
+      }
+    };
+
+    request.onerror = (event) => {
+      console.error('Error retrieving all data from IndexedDB:', (event.target as IDBRequest).error);
+      reject('Failed to retrieve all data.');
+    };
+
+    // Ensure the transaction's completion is handled, especially for own transactions
+    if (ownTransaction) {
+      transaction!.oncomplete = () => {
+        db?.close(); // Close the connection if this function opened it
+        console.log('Standalone getAllIndexedDBData transaction completed and DB closed.');
+      };
+
+      transaction!.onerror = (event) => {
+        db?.close(); // Close on error too
+        console.error('Standalone getAllIndexedDBData transaction error:', (event.target as IDBTransaction).error);
+        reject('Transaction failed during getAll (standalone).');
+      };
+
+      transaction!.onabort = (event) => {
+        db?.close(); // Close on abort too
+        console.warn('Standalone getAllIndexedDBData transaction aborted.');
+        reject('Transaction aborted during getAll (standalone).');
+      };
+    }
+    // If not ownTransaction, the calling function (updateSavedQueries) manages db.close()
+  });
 }

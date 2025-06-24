@@ -6,11 +6,18 @@ type RequestConfig = { text: { responseMimeType: string; responseSchema?: object
 
 type PromptContent = {
   "role": string;
-  "parts": [{"text": string}]
+  "parts": [{ "text": string }]
 }[];
 
 type Option = {
-  text: string; name: string; lang: string |undefined
+  text: string; name: string; lang: string | undefined
 };
 
-type token = { access_token?: string; error?: string; error_description?: string }
+type token = { access_token?: string; error?: string; error_description?: string };
+
+type query = {
+  query: string;
+  sentences: Sentence[];
+  timestamp?: number;
+  DBKey?: string
+}
