@@ -668,34 +668,19 @@ async function callCloudFunction(url: string, query?: string, params?: { [key: s
   // const accessToken = await getAccessToken();
 
   if (!query) return alert('Please enter a query to send to Gemini');
+  
+  if (!params?.audioConfig && voiceName.selectedIndex < 0) return alert('Please select a voice to use for the audio playback');
 
-  if (voiceName.selectedIndex < 0) return alert('Please select a voice to use for the audio playback');
-
-  const voice = voiceName.options[voiceName.selectedIndex];
-
-  const code = getLanguageCode(voice); //e.g.: 'en-US', 'it-IT'
-  const name = voice.lang ? voice.value : `${code}-${voice.value}`;//If the voide does not have its language property set, it means we are using one of the Chirp2-HD voices, e.g.: en-GB-Chirp3-HD-Achernar
-
+  const {code, name, voice} = getLanguageCode(); //e.g.: 'en-US', 'it-IT'
+  
   const voiceParams = {
     languageCode: code, // e.g., 'en-GB' for Grand Britain English
     name: name,
   };
 
-  const audioConfig = {
-    audioEncoding: 'MP3',// Or 'LINEAR16' for uncompressed WAV
-    speakingRate: voiceRate.valueAsNumber || 1.0,  // 0.25 to 4.0 (1.0 is normal)
-    //  volumeGainDb: 0.0,  // -96.0 to 16.0 (0.0 is normal)
-    // effectsProfileId: ['small-bluetooth-speaker-effect'], // Optional, for specific audio profiles
-  }
-
-  if (voice.lang) {
-    //!pitch is not available for the prebuilt-voices. This will give an error.
-    //@ts-ignore
-    audioConfig.pitch = voicePitch.valueAsNumber || 1.0;  // -20.0 to 20.0 (0.0 is normal)
-  }
-
+  
   saveToLocalStorage(); // Save settings to localStorage
-  console.log('Calling Gemini with query:', query, 'and voice params:', voiceParams, 'and audio config:', audioConfig);
+  //console.log('Calling Gemini with query:', query, 'and voice params:', voiceParams, 'and audio config:', audioConfig);
 
   try {
     return await fetchGemini();
@@ -720,12 +705,15 @@ async function callCloudFunction(url: string, query?: string, params?: { [key: s
    * console.log(response);
    */
   async function fetchGemini() {
-    const body = {
-      query: query,
-      ...params, // Include any additional parameters if needed
-      voiceParams: voiceParams,
-      audioConfig: audioConfig,
-    };
+  const body: { [key: string]: any } = {
+    query: query,
+    voiceParams: voiceParams,
+    ...params, // Include any additional parameters if needed
+  };
+
+    if (!body.audioConfig)
+      body.audioConfig = getAudioConfig(voice); // Include audioConfig only if not already provided
+    
     const response = await fetch(`${BASE_URL}${url}`, { // <-- This is your "client" call
       method: 'POST',
       headers: {
@@ -738,21 +726,44 @@ async function callCloudFunction(url: string, query?: string, params?: { [key: s
     // ... handle response ...
     return await response.json(); // Parse the JSON response
 
+  };
+
+  function getAudioConfig(voice: HTMLOptionElement){
+    const config = {
+      audioEncoding: 'MP3',// Or 'LINEAR16' for uncompressed WAV
+      speakingRate: voiceRate.valueAsNumber || 1.0,  // 0.25 to 4.0 (1.0 is normal)
+      //  volumeGainDb: 0.0,  // -96.0 to 16.0 (0.0 is normal)
+      // effectsProfileId: ['small-bluetooth-speaker-effect'], // Optional, for specific audio profiles
+    }
+
+    if (voice.lang) {
+      //!pitch is not available for the prebuilt-voices. This will give an error.
+      //@ts-ignore
+      config.pitch = voicePitch.valueAsNumber || 1.0;  // -20.0 to 20.0 (0.0 is normal)
+    }
+    return config
   }
 
 }
 
-function getLanguageCode(voice?: HTMLOptionElement): string {
-  if (voice?.lang && voice?.dataset.country)
-    return `${voice.lang.toLowerCase()}-${voice.dataset.country}`;
+function getLanguageCode(): { code: string, name: string, voice: HTMLOptionElement } {
+  const voice = voiceName.options[voiceName.selectedIndex] || voiceName.options[0]; // Get the selected voice or the first one if none is selected
+  let code;
+
+  if (voice.lang && voice.dataset.country)
+    code = `${voice.lang.toLowerCase()}-${voice.dataset.country}`;
 
   const targetLang = targetLangSelect.options[targetLangSelect.selectedIndex];
   if (!targetLang)
-    return "en-GB";
+    code = "en-GB";
   let lang = targetLang.value;
   if (lang === 'en')
-    return `${lang.toLowerCase()}-GB`;
-  else return `${lang.toLowerCase()}-${lang.toUpperCase()}`
+    code = `${lang.toLowerCase()}-GB`;
+  else code = `${lang.toLowerCase()}-${lang.toUpperCase()}`;
+
+  const name = voice.lang ? voice.value : `${code}-${voice.value}`;//If the voide does not have its language property set, it means we are using one of the Chirp2-HD voices, e.g.: en-GB-Chirp3-HD-Achernar
+
+  return {code:code, name:name, voice:voice}
 }
 
 let tokenClient: google.accounts.oauth2.TokenClient | null = null;
@@ -1098,13 +1109,44 @@ async function getTranscriptionFromLinkToAudio() {
 
   if (voiceName.selectedIndex < 0) return alert('Please select a voice to use for the audio playback');
 
-  const voice = voiceName.options[voiceName.selectedIndex];
-  const audioConfig = {
+  /*const audioConfig = {
     encoding: 'MP3', // Or 'LINEAR16', 'WEBM_OPUS' etc. Check the audio file's actual format.
     sampleRateHertz: 44100,  // Or 16000, 48000 etc.
     languageCode: getLanguageCode(voice),
     enableAutomaticPunctuation: true
-  };
+  };*/
+
+  const audioConfig = {
+    encoding: 'MP3',
+    sampleRateHertz: 44100,  // Or 16000, 48000 etc.,
+    //audioChannelCount: integer,
+    //enableSeparateRecognitionPerChannel: boolean,
+    languageCode: getLanguageCode().code, // e.g., 'en-US', 'it-IT'
+    alternativeLanguageCodes: ['en-US', 'fr-FR', 'en-UK'], // Optional, for multilingual audio
+    //"maxAlternatives": integer,
+    //"profanityFilter": boolean,
+    /*adaptation: {
+      object (SpeechAdaptation)
+    },*/
+    /*speechContexts: [
+      {
+        object (SpeechContext)
+      }
+    ],*/
+    //enableWordTimeOffsets: boolean,
+    //enableWordConfidence: boolean,
+    //enableAutomaticPunctuation: boolean,
+    //enableSpokenPunctuation: boolean,
+    //enableSpokenEmojis: boolean,
+    /*diarizationConfig: {
+      object (SpeakerDiarizationConfig)
+    },*/
+    /*metadata: {
+      object (RecognitionMetadata)
+    },*/
+    //model: string,
+    //useEnhanced: boolean
+  }
 
   geminiOutput.innerHTML = '';
   geminiOutput.textContent = 'Getting the audio transcription form Google Speech...';
