@@ -1023,7 +1023,7 @@ async function getTranscriptionFromLinkToAudio() {
     geminiOutput.innerHTML = '';
     geminiOutput.textContent = 'Getting the audio transcription form Google Speech...';
     const query = `Transcribe the audio file from the following URL: ${audioUrl}. Please return the transcription as a single sentence without any additional text.`;
-    const data = await callCloudFunction('transcribe', query, { audioUrl: audioUrl, audioConfig: audioConfig }); // Call the askGemini function with the cloud function URL
+    const data = await callCloudFunction('transcribe', query, { audioUrl: audioUrl, audioConfig: audioConfig, isShort: false }); // Call the askGemini function with the cloud function URL
     const response = data.response;
     if (!response)
         throw new Error('No response received from Gemini API');
