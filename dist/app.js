@@ -97,6 +97,7 @@ const geminiOutput = document.getElementById('geminiResponse');
 const sendQueryBtn = document.getElementById('askGemini');
 const sentencesBtn = document.getElementById('getSentences');
 const readBtn = document.getElementById('readText');
+const transcribeBtn = document.getElementById('transcribeAudio');
 const preFilled = [
     sourceLangSelect,
     targetLangSelect,
@@ -147,6 +148,7 @@ const STORE_NAME = 'queries';
 sentencesBtn.onclick = generateSentences;
 sendQueryBtn.onclick = askGemini;
 readBtn.onclick = readText;
+transcribeBtn.onclick = getTranscriptionFromLinkToAudio;
 // Language selection handlers
 (function populateVoiceOptions() {
     // Array of available voice options for the Text-to-Speech API
@@ -599,19 +601,7 @@ async function callCloudFunction(url, query, params) {
     if (voiceName.selectedIndex < 0)
         return alert('Please select a voice to use for the audio playback');
     const voice = voiceName.options[voiceName.selectedIndex];
-    function languageCode() {
-        if (voice.lang && voice.dataset.country)
-            return `${voice.lang.toLowerCase()}-${voice.dataset.country}`;
-        const targetLang = targetLangSelect.options[targetLangSelect.selectedIndex];
-        if (!targetLang)
-            return "en-GB";
-        let lang = targetLang.value;
-        if (lang === 'en')
-            return `${lang.toLowerCase()}-GB`;
-        else
-            return `${lang.toLowerCase()}-${lang.toUpperCase()}`;
-    }
-    const code = languageCode(); //e.g.: 'en-US', 'it-IT'
+    const code = getLanguageCode(voice); //e.g.: 'en-US', 'it-IT'
     const name = voice.lang ? voice.value : `${code}-${voice.value}`; //If the voide does not have its language property set, it means we are using one of the Chirp2-HD voices, e.g.: en-GB-Chirp3-HD-Achernar
     const voiceParams = {
         languageCode: code, // e.g., 'en-GB' for Grand Britain English
@@ -670,6 +660,18 @@ async function callCloudFunction(url, query, params) {
         // ... handle response ...
         return await response.json(); // Parse the JSON response
     }
+}
+function getLanguageCode(voice) {
+    if ((voice === null || voice === void 0 ? void 0 : voice.lang) && (voice === null || voice === void 0 ? void 0 : voice.dataset.country))
+        return `${voice.lang.toLowerCase()}-${voice.dataset.country}`;
+    const targetLang = targetLangSelect.options[targetLangSelect.selectedIndex];
+    if (!targetLang)
+        return "en-GB";
+    let lang = targetLang.value;
+    if (lang === 'en')
+        return `${lang.toLowerCase()}-GB`;
+    else
+        return `${lang.toLowerCase()}-${lang.toUpperCase()}`;
 }
 let tokenClient = null;
 async function getGoogleAccessTokenSilently(scopes) {
@@ -967,4 +969,113 @@ async function getSavedQueries(transaction) {
         }
     });
 }
+async function getTranscriptionFromLinkToAudio() {
+    //const podcastUrl = prompt('Please enter the URL of the audio file you want to transcribe:');
+    //if (!podcastUrl) return alert('No URL provided. Please enter a valid URL.');
+    //const audioUrl = await extractAudioURLfromRaiPodcast(podcastUrl);
+    const audioUrl = prompt('Please enter the URL of the online audio you want to transcribe', 'https://creativemedia9-rai-it.akamaized.net/podcastcdn/NewsVod/radiofonia/Radio3/12872314.mp3');
+    if (voiceName.selectedIndex < 0)
+        return alert('Please select a voice to use for the audio playback');
+    const voice = voiceName.options[voiceName.selectedIndex];
+    const audioConfig = {
+        encoding: 'MP3', // Or 'LINEAR16', 'WEBM_OPUS' etc. Check the audio file's actual format.
+        sampleRateHertz: 44100, // Or 16000, 48000 etc.
+        languageCode: getLanguageCode(voice),
+        enableAutomaticPunctuation: true
+    };
+    geminiOutput.innerHTML = '';
+    geminiOutput.textContent = 'Getting the audio transcription form Google Speech...';
+    const query = `Transcribe the audio file from the following URL: ${audioUrl}. Please return the transcription as a single sentence without any additional text.`;
+    const data = await callCloudFunction('transcribe', query, { audioUrl: audioUrl, audioConfig: audioConfig }); // Call the askGemini function with the cloud function URL
+    const response = data.response;
+    if (!response)
+        throw new Error('No response received from Gemini API');
+    geminiOutput.innerHTML = "";
+    await playSentences([response], true, true);
+    //await saveSentences([response]);
+}
+/**
+ * Fetches an HTML document from a URL, parses it, and then extracts
+ * the 'contentUrl' (audio URL) from the Schema.org JSON-LD script within.
+ *
+ * @param {string} url The URL of the HTML document to fetch.
+ * @returns {Promise<string | null>} A Promise that resolves with the extracted audio URL (string),
+ * or null if the URL cannot be fetched, parsed, or the audio URL
+ * is not found in the Schema.org data.
+ */
+async function extractAudioURLfromRaiPodcast(url) {
+    try {
+        //const podcastUrl = await getPodcastUrl(url);
+        const podcastUrl = prompt('Please enter the URL of the podcast audio file:');
+        if (!podcastUrl)
+            return null;
+        const podcastPage = await fetchHtmlDocument(podcastUrl);
+        // 5. Locate the JSON-LD script tag
+        if (!podcastPage)
+            return null;
+        const scriptTag = podcastPage.querySelector('script[type="application/ld+json"]');
+        if (!scriptTag) {
+            console.warn('No <script type="application/ld+json"> tag found in the document from:', url);
+            return null;
+        }
+        // 6. Extract and parse the JSON content
+        const jsonString = scriptTag.textContent;
+        if (!jsonString)
+            return null;
+        const schemaData = JSON.parse(jsonString);
+        // 7. Access the 'associatedMedia.contentUrl' property
+        if (schemaData && schemaData.associatedMedia && schemaData.associatedMedia.contentUrl) {
+            return schemaData.associatedMedia.contentUrl;
+        }
+        else {
+            console.warn('The "associatedMedia.contentUrl" property was not found in the Schema.org data for:', url);
+            return null;
+        }
+    }
+    catch (error) {
+        console.error('An unexpected error occurred while fetching or processing:', url, error);
+        return null;
+    }
+    async function fetchHtmlDocument(url) {
+        var _a;
+        try {
+            const response = await fetch(url);
+            if (!response.ok) {
+                console.error('');
+                return null;
+            }
+            // 2. Check if the Content-Type header suggests HTML
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('text/html')) {
+                console.warn(`Response content type is not HTML: ${contentType || 'N/A'} for URL: ${url}`);
+                return null;
+            }
+            // 3. Get the entire response body as text
+            const htmlText = await response.text();
+            // 4. Parse the HTML text into a Document object
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(htmlText, 'text/html');
+            // Optional: Check for HTML parsing errors
+            if (htmlDoc.querySelector('parsererror')) {
+                console.warn('HTML parsing errors detected in document from:', url, (_a = htmlDoc.querySelector('parsererror')) === null || _a === void 0 ? void 0 : _a.textContent);
+                return null;
+            }
+            return htmlDoc;
+        }
+        catch (error) {
+            console.error('Failed to parse html document from url');
+        }
+    }
+    async function getPodcastUrl(url) {
+        var _a;
+        const doc = await fetchHtmlDocument(url);
+        if (!doc)
+            return null;
+        const players = doc.getElementsByTagName('video');
+        if (!players.length)
+            return null;
+        return (_a = players[1]) === null || _a === void 0 ? void 0 : _a.src;
+    }
+}
+;
 //# sourceMappingURL=app.js.map
