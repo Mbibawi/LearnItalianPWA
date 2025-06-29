@@ -1011,7 +1011,7 @@ async function getTranscriptionFromLinkToAudio() {
         //enableWordTimeOffsets: boolean,
         //enableWordConfidence: boolean,
         enableAutomaticPunctuation: true,
-        enableSpokenPunctuation: true,
+        //enableSpokenPunctuation: true,
         //enableSpokenEmojis: boolean,
         /*diarizationConfig: {
           object (SpeakerDiarizationConfig)
