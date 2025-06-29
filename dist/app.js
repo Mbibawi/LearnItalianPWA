@@ -1027,6 +1027,20 @@ async function getTranscriptionFromLinkToAudio() {
     const query = `Transcribe the audio file from the following URL: ${audioUrl}. Please return the transcription as a single sentence without any additional text.`;
     const data = await callCloudFunction('transcribe', query, { audioUrl: audioUrl, audioConfig: audioConfig, isShort: false }); // Call the askGemini function with the cloud function URL
     const response = data === null || data === void 0 ? void 0 : data.response;
+    if (response.uri) {
+        // If the response contains a URI, fetch the audio from that URI
+        const audioResponse = await fetch(response.uri);
+        if (!audioResponse.ok) {
+            throw new Error(`Failed to fetch audio from URI: ${response.uri}`);
+        }
+        //the file downloaded from the uri is an mp3 file, so we can use it directly after convertring it to a Unit8Array
+        const audioBlob = await audioResponse.blob();
+        const reader = new FileReader();
+        reader.readAsArrayBuffer(audioBlob);
+        reader.onloadend = () => {
+            response.audio = new Uint8Array(reader.result); // Convert the ArrayBuffer to Uint8Array
+        };
+    }
     if (!response)
         throw new Error(`No response received from Gemini API. data.response = ${data === null || data === void 0 ? void 0 : data.response}`);
     geminiOutput.innerHTML = "";
