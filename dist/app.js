@@ -526,7 +526,10 @@ async function playAudio(sentence, repeatCount = 1, pause = 1000) {
         return alert('No audio to play.');
     console.log('Playing audio for sentence:', text);
     //const repeat = Array(repeatCount).fill(0).map((_, i) => i); // Create an array to repeat the audio
-    audioPlayer.src = `data:audio/mp3;base64,${audio}`;
+    let src = audio.toString();
+    if (!src.startsWith('data:'))
+        src = `data:audio/mp3;base64,${src}`;
+    audioPlayer.src = src;
     audioPlayer.playbackRate = voiceRate.valueAsNumber;
     return new Promise((resolve, reject) => {
         audioPlayer.onended = onEnded;
@@ -1035,12 +1038,12 @@ async function getTranscriptionFromLinkToAudio() {
         if (!audioResponse.ok) {
             throw new Error(`Failed to fetch audio from URI: ${response.uri}`);
         }
-        response.audio = await audioResponse.arrayBuffer();
-        processResponse();
-        return;
+        //response.audio = await audioResponse.arrayBuffer();
+        //processResponse();
+        //return
         const audioBlob = await audioResponse.blob();
         const reader = new FileReader();
-        reader.readAsArrayBuffer(audioBlob);
+        reader.readAsDataURL(audioBlob);
         reader.onloadend = () => processResponse(reader.result);
         return;
     }
