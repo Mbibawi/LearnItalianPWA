@@ -989,13 +989,14 @@ async function getTranscriptionFromLinkToAudio() {
       languageCode: getLanguageCode(voice),
       enableAutomaticPunctuation: true
     };*/
+    const langCode = getLanguageCode().code;
     const audioConfig = {
         encoding: 'MP3',
         sampleRateHertz: 44100, // Or 16000, 48000 etc.,
         //audioChannelCount: integer,
         //enableSeparateRecognitionPerChannel: boolean,
-        languageCode: getLanguageCode().code, // e.g., 'en-US', 'it-IT'
-        alternativeLanguageCodes: ['en-US', 'fr-FR', 'en-UK'], // Optional, for multilingual audio
+        languageCode: langCode, // e.g., 'en-US', 'it-IT'
+        alternativeLanguageCodes: ['en-US', 'fr-FR', 'en-GB'].filter(lang => lang !== langCode), // Optional, for multilingual audio
         //"maxAlternatives": integer,
         //"profanityFilter": boolean,
         /*adaptation: {
