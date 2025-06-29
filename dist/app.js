@@ -1028,7 +1028,7 @@ async function getTranscriptionFromLinkToAudio() {
     const data = await callCloudFunction('transcribe', query, { audioUrl: audioUrl, audioConfig: audioConfig, isShort: false }); // Call the askGemini function with the cloud function URL
     const response = data === null || data === void 0 ? void 0 : data.response;
     if (!response)
-        throw new Error('No response received from Gemini API');
+        throw new Error(`No response received from Gemini API. data.response = ${data === null || data === void 0 ? void 0 : data.response}`);
     geminiOutput.innerHTML = "";
     await playSentences([response], true, true);
     //await saveSentences([response]);

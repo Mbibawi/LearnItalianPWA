@@ -1158,7 +1158,7 @@ async function getTranscriptionFromLinkToAudio() {
 
   const response: Sentence = data?.response;
 
-  if (!response) throw new Error('No response received from Gemini API');
+  if (!response) throw new Error(`No response received from Gemini API. data.response = ${data?.response}`);
 
   geminiOutput.innerHTML = "";
 
