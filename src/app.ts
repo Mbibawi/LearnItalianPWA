@@ -1180,10 +1180,8 @@ async function getTranscriptionFromLinkToAudio() {
  */
 async function extractAudioURLfromRaiPodcast(url:string):Promise<string|null>{
   try {
-    //const podcastUrl = await getPodcastUrl(url);
-    const podcastUrl = prompt('Please enter the URL of the podcast audio file:');
-    if(!podcastUrl) return null;
-    const podcastPage = await fetchHtmlDocument(podcastUrl);
+    if(!url) return null;
+    const podcastPage = await fetchHtmlDocument(url);
         // 5. Locate the JSON-LD script tag
     if(!podcastPage) return null;
     const scriptTag = podcastPage.querySelector('script[type="application/ld+json"]');
