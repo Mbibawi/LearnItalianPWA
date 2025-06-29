@@ -29,13 +29,13 @@ h2 {
   text-align: center;
 }
 
-p.sentence {
+p.sentence, p.translation{
+  text-align: justify;
   font-family: "Times New Roman", serif;
   font-size: 12pt;
 }
 
 p.translation {
-  font-family: "Times New Roman", serif;
   font-style: italic;
   color: green;
 }
@@ -116,6 +116,8 @@ button:active {
 
 /* Gemini Response Output Area */
 .output {
+  display: grid;
+  grid-column-gap: 4px;
   background-color: #ecf0f1; /* Light gray for output area */
   border: 1px solid #ddd;
   border-radius: 6px;
