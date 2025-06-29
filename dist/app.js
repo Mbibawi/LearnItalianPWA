@@ -1043,6 +1043,7 @@ async function getTranscriptionFromLinkToAudio() {
         throw new Error(message);
     }
     ;
+    SENTENCES = [response];
     if (response.uri) {
         // If the response contains a URI, fetch the audio from that URI
         const audioResponse = await fetch(response.uri);
@@ -1061,7 +1062,6 @@ async function getTranscriptionFromLinkToAudio() {
         showProgress(null, true);
         if (audio)
             response.audio = audio; // Convert the ArrayBuffer to Uint8Array
-        geminiOutput.innerHTML = "";
         await playSentences([response], true, true);
         //await saveSentences([response]);
     }
