@@ -997,7 +997,7 @@ async function getTranscriptionFromLinkToAudio() {
         //audioChannelCount: integer,
         //enableSeparateRecognitionPerChannel: boolean,
         languageCode: langCode, // e.g., 'en-US', 'it-IT'
-        alternativeLanguageCodes: ['en-US', 'fr-FR', 'en-GB'].filter(lang => lang !== langCode), // Optional, for multilingual audio
+        //alternativeLanguageCodes: ['en-US', 'fr-FR', 'en-GB'].filter(lang=>lang !==langCode), // Optional, for multilingual audio
         //"maxAlternatives": integer,
         //"profanityFilter": boolean,
         /*adaptation: {
