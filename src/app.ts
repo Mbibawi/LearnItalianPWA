@@ -1166,23 +1166,24 @@ async function getTranscriptionFromLinkToAudio() {
     if (!audioResponse.ok) {
       throw new Error(`Failed to fetch audio from URI: ${response.uri}`);
     }
-    //the file downloaded from the uri is an mp3 file, so we can use it directly after convertring it to a Unit8Array
+    response.audio = await audioResponse.arrayBuffer() as Uint8Array;
+    processResponse();
+    return
     const audioBlob = await audioResponse.blob();
     const reader = new FileReader();
     reader.readAsArrayBuffer(audioBlob);
-    reader.onloadend = () => processResponse(reader.result as ArrayBuffer);
+    reader.onloadend = () => processResponse(reader.result as Uint8Array);
     return;
   }
 
   processResponse();
   
-  async function processResponse(audio?:ArrayBuffer) {
+  async function processResponse(audio?:Uint8Array) {
     if (audio)
-      response.audio = new Uint8Array(audio); // Convert the ArrayBuffer to Uint8Array
+      response.audio = audio; // Convert the ArrayBuffer to Uint8Array
     geminiOutput.innerHTML = "";
     await playSentences([response], true, true);
     //await saveSentences([response]);
-    
   }
   
 }
