@@ -1039,13 +1039,17 @@ async function getTranscriptionFromLinkToAudio() {
         const audioBlob = await audioResponse.blob();
         const reader = new FileReader();
         reader.readAsArrayBuffer(audioBlob);
-        reader.onloadend = () => {
-            response.audio = new Uint8Array(reader.result); // Convert the ArrayBuffer to Uint8Array
-        };
+        reader.onloadend = () => processResponse(reader.result);
+        return;
     }
-    geminiOutput.innerHTML = "";
-    await playSentences([response], true, true);
-    //await saveSentences([response]);
+    processResponse();
+    async function processResponse(audio) {
+        if (audio)
+            response.audio = new Uint8Array(audio); // Convert the ArrayBuffer to Uint8Array
+        geminiOutput.innerHTML = "";
+        await playSentences([response], true, true);
+        //await saveSentences([response]);
+    }
 }
 /**
  * Fetches an HTML document from a URL, parses it, and then extracts
