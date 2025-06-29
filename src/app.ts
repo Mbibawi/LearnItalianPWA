@@ -1158,6 +1158,8 @@ async function getTranscriptionFromLinkToAudio() {
 
   const response: Sentence = data?.response;
 
+  if (!response) throw new Error(`No response received from Gemini API. data.response = ${data?.response}`);
+
   if (response.uri) {
     // If the response contains a URI, fetch the audio from that URI
     const audioResponse = await fetch(response.uri);
@@ -1173,10 +1175,7 @@ async function getTranscriptionFromLinkToAudio() {
     };
   }
 
-  if (!response) throw new Error(`No response received from Gemini API. data.response = ${data?.response}`);
-
   geminiOutput.innerHTML = "";
-
 
   await playSentences([response], true, true);
 
