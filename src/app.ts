@@ -1103,9 +1103,9 @@ async function getSavedQueries(transaction?: IDBTransaction): Promise<query[]> {
 async function getTranscriptionFromLinkToAudio() {
   //const podcastUrl = prompt('Please enter the URL of the audio file you want to transcribe:');
   //if (!podcastUrl) return alert('No URL provided. Please enter a valid URL.');
-
-  //const audioUrl = await extractAudioURLfromRaiPodcast(podcastUrl);
-  const audioUrl = prompt('Please enter the URL of the online audio you want to transcribe', 'https://creativemedia9-rai-it.akamaized.net/podcastcdn/NewsVod/radiofonia/Radio3/12872314.mp3');
+  const podcastUrl = prompt('Please enter the URL of the podcast audio file:') || '';
+  console.log(`Podcast URL = ${podcastUrl}`)
+  const audioUrl = await extractAudioURLfromRaiPodcast(podcastUrl) || prompt('Please enter the URL of the online audio you want to transcribe', 'https://creativemedia9-rai-it.akamaized.net/podcastcdn/NewsVod/radiofonia/Radio3/12872314.mp3');
 
   if (voiceName.selectedIndex < 0) return alert('Please select a voice to use for the audio playback');
 
@@ -1123,7 +1123,7 @@ async function getTranscriptionFromLinkToAudio() {
     //audioChannelCount: integer,
     //enableSeparateRecognitionPerChannel: boolean,
     languageCode: langCode, // e.g., 'en-US', 'it-IT'
-    //alternativeLanguageCodes: ['en-US', 'fr-FR', 'en-GB'].filter(lang=>lang !==langCode), // Optional, for multilingual audio
+    alternativeLanguageCodes: ['en-US', 'fr-FR', 'en-GB'].filter(lang=>lang !==langCode), // Optional, for multilingual audio
     //"maxAlternatives": integer,
     //"profanityFilter": boolean,
     /*adaptation: {
@@ -1156,7 +1156,7 @@ async function getTranscriptionFromLinkToAudio() {
 
   const data = await callCloudFunction('transcribe', query, {audioUrl:audioUrl, audioConfig:audioConfig, isShort:false}); // Call the askGemini function with the cloud function URL
 
-  const response: Sentence = data;
+  const response: Sentence = data.response;
 
   if (!response) throw new Error('No response received from Gemini API');
 
