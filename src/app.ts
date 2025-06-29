@@ -321,17 +321,20 @@ async function askGemini(): Promise<void | any[]> {
 
   const prompt = `You are a  teacher who is answering a question from a student. The answer must be put in plain text since it will be converted into an audio file by google's text-to-speech api. Remove any * or special charachters from the text, and prepare it for being read loudly by someone to an audience or as a speech in a meeting. ${ssml}The question is: ${geminiInput.value.trim()}.` // Get the input query from the text area
 
-  geminiOutput.innerHTML = '';
-  geminiOutput.textContent = 'Asking Gemini...';
 
+  showProgress('Asking Gemini...', true);
 
   const data = await callCloudFunction('ask', prompt); // Call the askGemini function with the cloud function URL
 
   const response: Sentence = data.response;
 
-  if (!response) throw new Error('No response received from Gemini API');
+  if (!response) {
+    const error = 'No response received from Gemini API';
+    showProgress(error)
+    throw new Error(error);
+  };
 
-  geminiOutput.innerHTML = "";
+  showProgress(null, true);//We empty the output 
 
   response.text = removeSsmlMarkup(response.text);
 
@@ -351,7 +354,11 @@ async function readText() {
 
   const response: Sentence = data.response;
 
-  if (!response) throw new Error('No response received from Gemini API');
+  if (!response) {
+    const error = `No response received from Gemini API`;
+    alert(error);
+    throw new Error(error)
+  };
 
   await playSentences([response], false, false);
 
@@ -455,16 +462,18 @@ async function generateSentences() {
 
   const query = `Generate ${isNaN(Number(number)) ? 3 : Number(number)} distinct sentences in the ${targetLanguage} language according to the following guidelines or instructions: ${geminiInput.value.trim()}. Each sentence should not exceed ${isNaN(Number(words)) ? 10 : Number(words)} words long. Return the sentences as a JSON array of strings. For example: ["Sentence one.", "Sentence two."]\nEnsure the output is ONLY the JSON array.`;
 
-  geminiOutput.innerHTML = ''; // Update the UI to indicate fetching
-  geminiOutput.textContent = 'Waiting for the sentences....'; // Update the UI to indicate fetching
+  showProgress('Waiting for the sentences....', true);
+  
   const data = await callCloudFunction('sentences', query); // Call the askGemini function with the cloud function URL
 
-  const sentences: Sentence[] = data.sentences; // Extract sentences from the response
+  const sentences: Sentence[] = data?.sentences; // Extract sentences from the response
+  if (!data.sentences) {
+    const error = 'No sentences received from Gemini API';
+    showProgress(error)
+    throw new Error(error)
+  };
 
-  geminiOutput.innerHTML = "";
-
-  if (!data.sentences) throw new Error('No sentences received from Gemini API');
-
+  showProgress(null, true)
 
   await playSentences(sentences, true)
 
@@ -493,7 +502,6 @@ async function playSentences(sentences: Sentence[], translate: boolean, edit: bo
   if (!sentences?.length) return;
   const lang = sourceLangSelect.options[sourceLangSelect.selectedIndex]?.textContent || 'English';//We will use the source language and translate the text to it
   const loop = document.getElementById('loop') as HTMLInputElement;
-  if (!loop) console.warn('Loop input not found');
   audioPlayer.loop = false;
   geminiOutput.ondblclick = () => play(false); // Allow replaying the sentences by double-clicking on the output div
 
@@ -507,10 +515,12 @@ async function playSentences(sentences: Sentence[], translate: boolean, edit: bo
     }
     await play(edit); // Play the sentences with the specified parameters
   } catch (error) {
-    console.log('failed to play sentences', error);
+    const message = `Failed to play sentences. Got error: ${error}`;
+    showProgress(message);
+    console.log(message);
   }
 
-  audioPlayer.loop = loop?.checked;
+  audioPlayer.loop = loop?.checked || false;
 
   async function play(edit: boolean) {
     const repeatCount = parseInt(repeatCountInput.value) || 1;
@@ -614,9 +624,10 @@ async function playAudio(sentence: Sentence, repeatCount: number = 1, pause: num
 
     function onError() {
       audioPlayer.onended = null; // Remove the event listener to prevent multiple calls
-      reject(new Error('Error playing audio: ' + audioPlayer.error?.message));
+      const error = `Error playing audio: ${audioPlayer.error?.message}`;
+      showProgress(error)
+      reject(new Error(error));
     }
-
   });
 
   function delay(ms: number): Promise<void> {
@@ -681,12 +692,13 @@ async function callCloudFunction(url: string, query?: string, params?: { [key: s
 
   
   saveToLocalStorage(); // Save settings to localStorage
-  //console.log('Calling Gemini with query:', query, 'and voice params:', voiceParams, 'and audio config:', audioConfig);
 
   try {
     return await fetchGemini();
   } catch (error) {
-    console.log('Error fetching Gemini Query: ', error)
+    const message = `Error fetching Gemini Query: ${error}`;
+    showProgress(message)
+    console.log(message)
     return null
   }
 
@@ -1108,14 +1120,10 @@ async function getTranscriptionFromLinkToAudio() {
   console.log(`Podcast URL = ${podcastUrl}`)
   const audioUrl = await extractAudioURLfromRaiPodcast(podcastUrl) || prompt('Please enter the URL of the online audio you want to transcribe', 'https://creativemedia9-rai-it.akamaized.net/podcastcdn/NewsVod/radiofonia/Radio3/12872314.mp3');
 
+  showProgress(`Transcribing audio from url: ${audioUrl}`);
+
   if (voiceName.selectedIndex < 0) return alert('Please select a voice to use for the audio playback');
 
-  /*const audioConfig = {
-    encoding: 'MP3', // Or 'LINEAR16', 'WEBM_OPUS' etc. Check the audio file's actual format.
-    sampleRateHertz: 44100,  // Or 16000, 48000 etc.
-    languageCode: getLanguageCode(voice),
-    enableAutomaticPunctuation: true
-  };*/
   const langCode = getLanguageCode().code;
 
   const audioConfig = {
@@ -1150,27 +1158,28 @@ async function getTranscriptionFromLinkToAudio() {
     //useEnhanced: boolean
   }
 
-  geminiOutput.innerHTML = '';
-  geminiOutput.textContent = 'Getting the audio transcription form Google Speech...';
-
+  showProgress('Getting the audio transcription form Google Speech...', true);
+  
   const query = `Transcribe the audio file from the following URL: ${audioUrl}. Please return the transcription as a single sentence without any additional text.`;
 
   const data = await callCloudFunction('transcribe', query, {audioUrl:audioUrl, audioConfig:audioConfig, isShort:false}); // Call the askGemini function with the cloud function URL
 
   const response: Sentence = data?.response;
 
-  if (!response) throw new Error(`No response received from Gemini API. data.response = ${data?.response}`);
+  if (!response) {
+    const message = `No response received from Gemini API. data.response = ${data?.response}`;
+    showProgress(message)
+    throw new Error(message);
+  };
 
   if (response.uri) {
     // If the response contains a URI, fetch the audio from that URI
     const audioResponse = await fetch(response.uri);
     if (!audioResponse.ok) {
-      throw new Error(`Failed to fetch audio from URI: ${response.uri}`);
+      const message = `Failed to fetch audio from URI: ${response.uri}`;
+      throw new Error(message);
     }
-    //response.audio = await audioResponse.arrayBuffer();
-    //processResponse();
-    //return
-    const audioBlob = await audioResponse.blob();
+      const audioBlob = await audioResponse.blob();
     const reader = new FileReader();
     reader.readAsDataURL(audioBlob);
     reader.onloadend = () => processResponse(reader.result as Uint8Array);
@@ -1179,7 +1188,8 @@ async function getTranscriptionFromLinkToAudio() {
 
   processResponse();
   
-  async function processResponse(audio?:Uint8Array) {
+  async function processResponse(audio?: Uint8Array) {
+    showProgress(null, true);
     if (audio)
       response.audio = audio; // Convert the ArrayBuffer to Uint8Array
     geminiOutput.innerHTML = "";
@@ -1187,6 +1197,14 @@ async function getTranscriptionFromLinkToAudio() {
     //await saveSentences([response]);
   }
   
+}
+
+function showProgress(message: string| null, clear: boolean = false) {
+  if (clear) geminiOutput.innerHTML = "";
+  if (!message) return;
+  const p = document.createElement('p');
+  p.textContent = message
+  geminiOutput.appendChild(p)
 }
 
 /**
@@ -1207,8 +1225,9 @@ async function extractAudioURLfromRaiPodcast(url:string):Promise<string|null>{
     const scriptTag = podcastPage.querySelector('script[type="application/ld+json"]');
 
     if (!scriptTag) {
-      console.warn('No <script type="application/ld+json"> tag found in the document from:', url);
-      return null;
+      const error = `No <script type="application/ld+json"> tag found in the document from: ${url}`;
+      showProgress(error)
+      throw new Error(error);
     }
 
     // 6. Extract and parse the JSON content
@@ -1220,12 +1239,12 @@ async function extractAudioURLfromRaiPodcast(url:string):Promise<string|null>{
     if (schemaData && schemaData.associatedMedia && schemaData.associatedMedia.contentUrl) {
       return schemaData.associatedMedia.contentUrl;
     } else {
-      console.warn('The "associatedMedia.contentUrl" property was not found in the Schema.org data for:', url);
-      return null;
+      const error = `The "associatedMedia.contentUrl" property was not found in the Schema.org data for: ${url}`;
+      showProgress(error)
+      throw new Error(error);
     }
-
   } catch (error) {
-    console.error('An unexpected error occurred while fetching or processing:', url, error);
+    showProgress(`An unexpected error occurred while fetching or processing: ${url}\n error: ${error}`)
     return null;
   }
 
@@ -1233,9 +1252,10 @@ async function extractAudioURLfromRaiPodcast(url:string):Promise<string|null>{
   async function fetchHtmlDocument(url:string){
     try {
       const response = await fetch(url);
-      if(!response.ok){
-        console.error('');
-        return null
+      if (!response.ok) {
+        const error = `failed to fetch html document from the url: ${url}`;
+        showProgress(error);
+        throw new Error(error)
       }
       // 2. Check if the Content-Type header suggests HTML
       const contentType = response.headers.get('content-type');
@@ -1253,13 +1273,15 @@ async function extractAudioURLfromRaiPodcast(url:string):Promise<string|null>{
     
       // Optional: Check for HTML parsing errors
       if (htmlDoc.querySelector('parsererror')) {
-        console.warn('HTML parsing errors detected in document from:', url, htmlDoc.querySelector('parsererror')?.textContent);
-        return null
+        const error = `HTML parsing errors detected in document from url: ${url}\n${htmlDoc.querySelector('parsererror')?.textContent}`;
+        showProgress(error);
+        throw new Error(error);
       }
-
       return htmlDoc;
-    }catch (error){
-      console.error('Failed to parse html document from url')
+    } catch (error) {
+      const message = `Failed to parse html document from url, and got an error: ${error}` as string;
+      showProgress(message);
+      console.error(message)
     }
   }
 
