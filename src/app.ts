@@ -1136,8 +1136,8 @@ async function getTranscriptionFromLinkToAudio() {
     ],*/
     //enableWordTimeOffsets: boolean,
     //enableWordConfidence: boolean,
-    //enableAutomaticPunctuation: boolean,
-    //enableSpokenPunctuation: boolean,
+    enableAutomaticPunctuation: true,
+    enableSpokenPunctuation: true,
     //enableSpokenEmojis: boolean,
     /*diarizationConfig: {
       object (SpeakerDiarizationConfig)
