@@ -997,8 +997,10 @@ async function getTranscriptionFromLinkToAudio() {
     //if (!podcastUrl) return alert('No URL provided. Please enter a valid URL.');
     const podcastUrl = prompt('Please enter the URL of the podcast audio file:') || '';
     console.log(`Podcast URL = ${podcastUrl}`);
-    const audioUrl = await extractAudioURLfromRaiPodcast(podcastUrl) || prompt('Please enter the URL of the online audio you want to transcribe', 'https://creativemedia9-rai-it.akamaized.net/podcastcdn/NewsVod/radiofonia/Radio3/12872314.mp3');
+    const audioUrl = await extractAudioURLfromRaiPodcast(podcastUrl) || prompt('Please provide the URL of the online audio you want to transcribe');
     showProgress(`Transcribing audio from url: ${audioUrl}`);
+    if (!audioUrl)
+        return showProgress(`Failed to extract the mp3 url of the Rai Radio url, or you did not provide a valid url`);
     if (voiceName.selectedIndex < 0)
         return alert('Please select a voice to use for the audio playback');
     const langCode = getLanguageCode().code;
@@ -1085,21 +1087,30 @@ function showProgress(message, clear = false) {
  * is not found in the Schema.org data.
  */
 async function extractAudioURLfromRaiPodcast(url) {
+    var _a;
+    if (!(url === null || url === void 0 ? void 0 : url.includes('raiplaysound')))
+        return null;
     try {
-        if (!url)
-            return null;
         const podcastPage = await fetchHtmlDocument(url);
         // 5. Locate the JSON-LD script tag
         if (!podcastPage)
             return null;
-        const scriptTag = podcastPage.querySelector('script[type="application/ld+json"]');
+        const videos = Array.from(podcastPage.querySelectorAll('VIDEO'));
+        if (!videos.length) {
+            showProgress('No video elements were found on the page parsed from the url you provided');
+            return null;
+        }
+        const src = ((_a = Array.from(videos).find(v => v.id === 'vjs_video_3_html5_api')) === null || _a === void 0 ? void 0 : _a.src) || null;
+        showProgress(`Successfully extracted the mp3 url from the provided link. The mp3 url is:\n ${src}`);
+        return src;
+        const scriptTag = podcastPage === null || podcastPage === void 0 ? void 0 : podcastPage.querySelector('script[type="application/ld+json"]');
         if (!scriptTag) {
             const error = `No <script type="application/ld+json"> tag found in the document from: ${url}`;
             showProgress(error);
             throw new Error(error);
         }
         // 6. Extract and parse the JSON content
-        const jsonString = scriptTag.textContent;
+        const jsonString = scriptTag === null || scriptTag === void 0 ? void 0 : scriptTag.textContent;
         if (!jsonString)
             return null;
         const schemaData = JSON.parse(jsonString);
