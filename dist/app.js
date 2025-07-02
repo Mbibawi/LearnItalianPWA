@@ -1087,7 +1087,6 @@ function showProgress(message, clear = false) {
  * is not found in the Schema.org data.
  */
 async function extractAudioURLfromRaiPodcast(url) {
-    var _a;
     if (!(url === null || url === void 0 ? void 0 : url.includes('raiplaysound')))
         return null;
     try {
@@ -1095,14 +1094,17 @@ async function extractAudioURLfromRaiPodcast(url) {
         // 5. Locate the JSON-LD script tag
         if (!podcastPage)
             return null;
-        const videos = Array.from(podcastPage.querySelectorAll('VIDEO'));
-        if (!videos.length) {
-            showProgress('No video elements were found on the page parsed from the url you provided');
-            return null;
+        function extractVideo(podcastPage) {
+            var _a;
+            const videos = Array.from(podcastPage.querySelectorAll('VIDEO'));
+            if (!videos.length) {
+                showProgress('No video elements were found on the page parsed from the url you provided');
+                return null;
+            }
+            const src = ((_a = Array.from(videos).find(v => v.id === 'vjs_video_3_html5_api')) === null || _a === void 0 ? void 0 : _a.src) || null;
+            showProgress(`Successfully extracted the mp3 url from the provided link. The mp3 url is:\n ${src}`);
+            return src;
         }
-        const src = ((_a = Array.from(videos).find(v => v.id === 'vjs_video_3_html5_api')) === null || _a === void 0 ? void 0 : _a.src) || null;
-        showProgress(`Successfully extracted the mp3 url from the provided link. The mp3 url is:\n ${src}`);
-        return src;
         const scriptTag = podcastPage === null || podcastPage === void 0 ? void 0 : podcastPage.querySelector('script[type="application/ld+json"]');
         if (!scriptTag) {
             const error = `No <script type="application/ld+json"> tag found in the document from: ${url}`;

@@ -1228,17 +1228,17 @@ async function extractAudioURLfromRaiPodcast(url:string):Promise<string|null>{
         // 5. Locate the JSON-LD script tag
     if (!podcastPage) return null;
 
-    const videos = Array.from(podcastPage.querySelectorAll('VIDEO')) as HTMLVideoElement[];
-
-    if (!videos.length) {
-      showProgress('No video elements were found on the page parsed from the url you provided');
-      return null
+    function extractVideo(podcastPage:Document) {
+      const videos = Array.from(podcastPage.querySelectorAll('VIDEO')) as HTMLVideoElement[];
+      if (!videos.length) {
+        showProgress('No video elements were found on the page parsed from the url you provided');
+        return null
+      }
+      const src = Array.from(videos).find(v => v.id === 'vjs_video_3_html5_api')?.src || null; 
+      showProgress(`Successfully extracted the mp3 url from the provided link. The mp3 url is:\n ${src}`)
+      
+      return src;
     }
-    const src = Array.from(videos).find(v => v.id === 'vjs_video_3_html5_api')?.src || null; 
- 
-    showProgress(`Successfully extracted the mp3 url from the provided link. The mp3 url is:\n ${src}`)
-    
-    return src;
 
     const scriptTag = podcastPage?.querySelector('script[type="application/ld+json"]');
 
