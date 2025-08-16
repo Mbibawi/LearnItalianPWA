@@ -345,14 +345,14 @@ async function askGemini(): Promise<void | any[]> {
   await saveSentences([response], `Ask Gemini: ${query}`);
 }
 
-async function readText(text?:string, language?:string):Promise<void | Sentence> {
-  if (text && language) return await getAudio();
+async function readText(text?:string):Promise<void | Sentence> {
+  if (text) return await getAudio();
   if (!text) {
     text = geminiInput.value;
     text = text.slice(geminiInput.selectionStart || 0, geminiInput.selectionEnd || text.length-1).trim();
     if (!text || !text.length) text = geminiInput.value;
   }
-  if(!language) language = targetLangSelect.options[targetLangSelect.selectedIndex]?.textContent || 'English';
+  //if(!language) language = targetLangSelect.options[targetLangSelect.selectedIndex]?.textContent || 'English';
 
   const response = await getAudio();
   
@@ -361,18 +361,16 @@ async function readText(text?:string, language?:string):Promise<void | Sentence>
   await saveSentences([response], `Read this text: ${text.substring(30)}`);
 
   async function getAudio() {
-    const prompt = `Read the following ${language} text in a native ${language} accent as if you were giving a speech or a conference to an audience or in a meeting. Just read the text without any comment, introduction, or explanation before or after it.\nThe text to be read is :\n"${text}"` // Get the input query from the text area
   
-    const data = await callCloudFunction('ask', prompt); // Call the askGemini function with the cloud function URL
+    const data = await callCloudFunction('read', text); // Call the askGemini function with the cloud function URL
   
     const response: Sentence = data?.response;
+    if (response?.audio) return response;
     
-    if (!response) {
-      const error = `No response received from Gemini API`;
-      alert(error);
-      throw new Error(error)
-    };
-    return response
+    const error = `No response received from Gemini API`;
+    alert(error);
+    throw new Error(error)
+
   }
 
 }
@@ -614,8 +612,7 @@ async function playAudio(sentence: Sentence, repeatCount: number = 1, pause: num
   if (!audio) return alert('No audio to play.');
 
   console.log('Playing audio for sentence:', text);
-  //const repeat = Array(repeatCount).fill(0).map((_, i) => i); // Create an array to repeat the audio
-  let src = audio.toString();
+  let src = `data:audio/mp3;base64,${Buffer.from(audio).toString('base64')}`;
   if (!src.startsWith('data:')) src = `data:audio/mp3;base64,${src}`;
   audioPlayer.src = src;
   audioPlayer.playbackRate = voiceRate.valueAsNumber;
@@ -790,7 +787,7 @@ function getLanguageCode(): { code: string, name: string, voice: HTMLOptionEleme
     code = `${lang.toLowerCase()}-GB`;
   else code = `${lang.toLowerCase()}-${lang.toUpperCase()}`;
 
-  const name = voice.lang ? voice.value : `${code}-${voice.value}`;//If the voide does not have its language property set, it means we are using one of the Chirp2-HD voices, e.g.: en-GB-Chirp3-HD-Achernar
+  const name = voice.lang ? voice.value : `${code}-${voice.value}`;//If the voice does not have its language property set, it means we are using one of the Chirp3-HD voices, e.g.: en-GB-Chirp3-HD-Achernar
 
   return {code:code, name:name, voice:voice}
 }

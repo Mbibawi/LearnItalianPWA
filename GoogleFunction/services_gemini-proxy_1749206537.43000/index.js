@@ -20,7 +20,7 @@ async function getAudioFromSentence(sentence, voiceParams, audioConfig) {
         return null;
     }
     const request = {
-        input: { text: sentence },
+        input: { ssml: sentence },
         voice: voiceParams,
         audioConfig: audioConfig,
     };
@@ -41,9 +41,12 @@ async function getAudioFromSentence(sentence, voiceParams, audioConfig) {
 async function callGemini(prompt, jsonResponse = false) {
     console.log("Calling Gemini API with query:", prompt);
 
-    const model = genAI.getGenerativeModel({ model: GEMINI_MODEL_NAME });
+    if(!genAI) throw new Error('genAI is undefined');
+
+    //const model = genAI.getGenerativeModel({ model: GEMINI_MODEL_NAME });
 
     const generateContentRequest = {
+        model: GEMINI_MODEL_NAME,
         contents: [{ role: "user", parts: [{ text: prompt }] }],
     };
 
@@ -54,8 +57,9 @@ async function callGemini(prompt, jsonResponse = false) {
     }
 
     try {
-        const result = await model.generateContent(generateContentRequest);
-        let text = await result.text();
+        const result = await genAI.models.generateContent(generateContentRequest);
+        console.log(result);
+        let text = result.text;
 
         if (!text) throw new Error("Gemini API failed to return text content.");
 
@@ -101,9 +105,9 @@ async function handleApiSentences(req, res) {
 
     console.log("Received request for /api/sentences. Request body:", req.body);
 
-    const { query, sourceLanguage, targetLanguage, voiceParams, audioConfig, sentencesNumber, wordsNumber } = req.body;
+    const { query, voiceParams, audioConfig } = req.body;
 
-    if (!query || !targetLanguge || !sourceLanguage || !voiceParams || !audioConfig || !sentencesNumber || !wordsNumber) {
+    if (!query || !voiceParams || !audioConfig) {
         return res.status(400).json({ message: "Missing required parameters. Ensure query, sourceLanguage, targetLanguage, voiceParams, audioConfig, sentencesNumber, and wordsNumber are provided." });
     }
 
@@ -112,11 +116,8 @@ async function handleApiSentences(req, res) {
         return res.status(500).json({ error: "Server configuration error: Gemini API Key missing." });
     }
 
-    const prompt = `Generate ${sentencesNumber} distinct sentences in the ${targetLanguge} language according to the following guidelines or instructions: "${query}". Each sentence should not exceed ${wordsNumber} words long.
-    Return the sentences as a JSON array of strings. For example: ["Sentence one.", "Sentence two."]\nEnsure the output is ONLY the JSON array.`;
-
     try {
-        const sentences = await callGemini(prompt, true);
+        const sentences = await callGemini(query, true);
         console.log("Gemini API successful. Generated text:", sentences);
 
         console.log("Calling Text-to-Speech API for text:");
@@ -148,7 +149,7 @@ async function handleApiAsk(req, res) {
 
     console.log("Received request for /api/ask. Request body:", req.body);
 
-    const { query, voiceParams, audioConfig } = req.body;
+    const { query, voiceParams, audioConfig, noAudio } = req.body;
 
     if (!query || !voiceParams || !audioConfig) {
         return res.status(400).json({ message: "Missing required parameters. Ensure query, voiceParams, and audioConfig are provided." });
@@ -162,7 +163,9 @@ async function handleApiAsk(req, res) {
     try {
         const responseText = await callGemini(query);
         console.log("Gemini API successful. Generated text:", responseText);
-
+        
+        if(responseText && noAudio) return res.status(200).json({response:{text: responseText, audio: null}});
+        
         console.log("Calling Text-to-Speech API for text");
         const audio = await getAudioFromSentence(responseText.trim(), voiceParams, audioConfig);
         return res.status(200).json({ response: audio });

@@ -310,9 +310,8 @@ async function askGemini() {
     await playSentences([response], true);
     await saveSentences([response], `Ask Gemini: ${query}`);
 }
-async function readText(text, language) {
-    var _a;
-    if (text && language)
+async function readText(text) {
+    if (text)
         return await getAudio();
     if (!text) {
         text = geminiInput.value;
@@ -320,22 +319,18 @@ async function readText(text, language) {
         if (!text || !text.length)
             text = geminiInput.value;
     }
-    if (!language)
-        language = ((_a = targetLangSelect.options[targetLangSelect.selectedIndex]) === null || _a === void 0 ? void 0 : _a.textContent) || 'English';
+    //if(!language) language = targetLangSelect.options[targetLangSelect.selectedIndex]?.textContent || 'English';
     const response = await getAudio();
     await playSentences([response], false, false);
     await saveSentences([response], `Read this text: ${text.substring(30)}`);
     async function getAudio() {
-        const prompt = `Read the following ${language} text in a native ${language} accent as if you were giving a speech or a conference to an audience or in a meeting. Just read the text without any comment, introduction, or explanation before or after it.\nThe text to be read is :\n"${text}"`; // Get the input query from the text area
-        const data = await callCloudFunction('ask', prompt); // Call the askGemini function with the cloud function URL
+        const data = await callCloudFunction('read', text); // Call the askGemini function with the cloud function URL
         const response = data === null || data === void 0 ? void 0 : data.response;
-        if (!response) {
-            const error = `No response received from Gemini API`;
-            alert(error);
-            throw new Error(error);
-        }
-        ;
-        return response;
+        if (response === null || response === void 0 ? void 0 : response.audio)
+            return response;
+        const error = `No response received from Gemini API`;
+        alert(error);
+        throw new Error(error);
     }
 }
 function _getSavedQueries() {
@@ -551,8 +546,7 @@ async function playAudio(sentence, repeatCount = 1, pause = 1000) {
     if (!audio)
         return alert('No audio to play.');
     console.log('Playing audio for sentence:', text);
-    //const repeat = Array(repeatCount).fill(0).map((_, i) => i); // Create an array to repeat the audio
-    let src = audio.toString();
+    let src = `data:audio/mp3;base64,${Buffer.from(audio).toString('base64')}`;
     if (!src.startsWith('data:'))
         src = `data:audio/mp3;base64,${src}`;
     audioPlayer.src = src;
@@ -709,7 +703,7 @@ function getLanguageCode() {
         code = `${lang.toLowerCase()}-GB`;
     else
         code = `${lang.toLowerCase()}-${lang.toUpperCase()}`;
-    const name = voice.lang ? voice.value : `${code}-${voice.value}`; //If the voide does not have its language property set, it means we are using one of the Chirp2-HD voices, e.g.: en-GB-Chirp3-HD-Achernar
+    const name = voice.lang ? voice.value : `${code}-${voice.value}`; //If the voice does not have its language property set, it means we are using one of the Chirp3-HD voices, e.g.: en-GB-Chirp3-HD-Achernar
     return { code: code, name: name, voice: voice };
 }
 let tokenClient = null;

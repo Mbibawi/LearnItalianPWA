@@ -1,7 +1,7 @@
 async function getCards() {
     const cards =
         returnSentences()
-            .filter((sentence, index) => index < 20)
+            .filter((sentence, index) => index < 5)
             .map(async (sentence, index) => await processSentence(sentence, index, 'Italian', 'French'));
 
     const deck = (await Promise.all(cards)); 
@@ -16,10 +16,10 @@ async function getCards() {
 async function processSentence(sentence: string, index: number, sourceLang:string, targetLang:string): Promise<string> {
     let audioFileName = `italian15K-${index}.mp3`;
     const translation = await translateSentence(sentence, targetLang);
-    const audioBuffer = await readText(sentence, sourceLang) as Sentence;
+    const read = await readText(sentence) as Sentence;
 
-    if (audioBuffer?.audio)
-        downloadAudio(audioBuffer.audio, audioFileName);
+    if (read?.audio)
+        downloadAudio(read.audio, audioFileName);
     else audioFileName = 'error.mp3';
 
     return `[sound:${audioFileName}, ${sentence}, ${translation}]`;

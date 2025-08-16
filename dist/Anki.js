@@ -1,7 +1,7 @@
 "use strict";
 async function getCards() {
     const cards = returnSentences()
-        .filter((sentence, index) => index < 20)
+        .filter((sentence, index) => index < 5)
         .map(async (sentence, index) => await processSentence(sentence, index, 'Italian', 'French'));
     const deck = (await Promise.all(cards));
     const csvContent = deck.map(card => `"${card}"`).join('\n');
@@ -13,9 +13,9 @@ async function getCards() {
 async function processSentence(sentence, index, sourceLang, targetLang) {
     let audioFileName = `italian15K-${index}.mp3`;
     const translation = await translateSentence(sentence, targetLang);
-    const audioBuffer = await readText(sentence, sourceLang);
-    if (audioBuffer === null || audioBuffer === void 0 ? void 0 : audioBuffer.audio)
-        downloadAudio(audioBuffer.audio, audioFileName);
+    const read = await readText(sentence);
+    if (read === null || read === void 0 ? void 0 : read.audio)
+        downloadAudio(read.audio, audioFileName);
     else
         audioFileName = 'error.mp3';
     return `[sound:${audioFileName}, ${sentence}, ${translation}]`;

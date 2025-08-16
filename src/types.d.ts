@@ -1,4 +1,4 @@
-type Sentence = { text: string; audio: Uint8Array, translation?: string, uri?:string };
+type Sentence = { text: string; audio: Uint8Array<ArrayBufferLike>, translation?: string, uri?:string };
 
 type RequestContent = { text: any[]; audio?: any[] };
 
