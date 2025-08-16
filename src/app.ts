@@ -169,7 +169,7 @@ const STORE_NAME = 'queries';
 // Gemini Buttons Handleers
 sentencesBtn.onclick = generateSentences;
 sendQueryBtn.onclick = askGemini;
-readBtn.onclick = readText;
+readBtn.onclick = ()=>readText();
 transcribeBtn.onclick = getTranscriptionFromLinkToAudio;
 
 // Language selection handlers
@@ -315,11 +315,13 @@ async function askGemini(): Promise<void | any[]> {
   //if (!accessToken) return console.log('Could not get accessToken');
   const voice = voiceName.options[voiceName.selectedIndex];
 
+  const query = geminiInput.value.trim();
+
   let ssml = '';
   if (!voice.value?.includes('Chirp3'))
     ssml = 'The generated text must be formatted as  SSML. If the text includes words in a different language than the main language of the text, these words or sentences must be properly marked with SSML. I need the text-to-speech api to be able to detect and properly render these words in a native pronounciation and accent. ';
 
-  const prompt = `You are a  teacher who is answering a question from a student. The answer must be put in plain text since it will be converted into an audio file by google's text-to-speech api. Remove any * or special charachters from the text, and prepare it for being read loudly by someone to an audience or as a speech in a meeting. ${ssml}The question is: ${geminiInput.value.trim()}.` // Get the input query from the text area
+  const prompt = `You are a  teacher who is answering a question from a student. The answer must be put in plain text since it will be converted into an audio file by google's text-to-speech api. Remove any * or special charachters from the text, and prepare it for being read loudly by someone to an audience or as a speech in a meeting. ${ssml}The question is: ${query}.` // Get the input query from the text area
 
 
   showProgress('Asking Gemini...', true);
@@ -340,29 +342,38 @@ async function askGemini(): Promise<void | any[]> {
 
   await playSentences([response], true);
 
-  await saveSentences([response]);
+  await saveSentences([response], `Ask Gemini: ${query}`);
 }
 
-async function readText() {
-  let text = geminiInput.value.slice(geminiInput.selectionStart || 0, geminiInput.selectionEnd || 0).trim();
-  if (!text || !text.length) text = geminiInput.value;
-  const targetLang = targetLangSelect.options[targetLangSelect.selectedIndex]?.textContent || 'English';
+async function readText(text?:string, language?:string):Promise<void | Sentence> {
+  if (text && language) return await getAudio();
+  if (!text) {
+    text = geminiInput.value;
+    text = text.slice(geminiInput.selectionStart || 0, geminiInput.selectionEnd || text.length-1).trim();
+    if (!text || !text.length) text = geminiInput.value;
+  }
+  if(!language) language = targetLangSelect.options[targetLangSelect.selectedIndex]?.textContent || 'English';
 
-  const prompt = `Read the following ${targetLang} text in a native ${targetLang} accent as if you were giving a speech or a conference to an audience or in a meeting. Just read the text without any comment, introduction, or explaination before or after it.\nThe text to be read is :\n"${text}"` // Get the input query from the text area
-
-  const data = await callCloudFunction('ask', prompt); // Call the askGemini function with the cloud function URL
-
-  const response: Sentence = data.response;
-
-  if (!response) {
-    const error = `No response received from Gemini API`;
-    alert(error);
-    throw new Error(error)
-  };
-
+  const response = await getAudio();
+  
   await playSentences([response], false, false);
 
-  await saveSentences([response]);
+  await saveSentences([response], `Read this text: ${text.substring(30)}`);
+
+  async function getAudio() {
+    const prompt = `Read the following ${language} text in a native ${language} accent as if you were giving a speech or a conference to an audience or in a meeting. Just read the text without any comment, introduction, or explanation before or after it.\nThe text to be read is :\n"${text}"` // Get the input query from the text area
+  
+    const data = await callCloudFunction('ask', prompt); // Call the askGemini function with the cloud function URL
+  
+    const response: Sentence = data?.response;
+    
+    if (!response) {
+      const error = `No response received from Gemini API`;
+      alert(error);
+      throw new Error(error)
+    };
+    return response
+  }
 
 }
 
@@ -371,10 +382,10 @@ function _getSavedQueries() {
   return JSON.parse(localStorage.queries).map((query: query) => query.query) as query[]
 }
 
-async function saveSentences(sentences: Sentence[]) {
+async function saveSentences(sentences: Sentence[], queryText?:string) {
   if (!sentences || !sentences.length) return alert('No sentences to save');
   const query: query = {
-    query: geminiInput.value.trim(),
+    query: queryText || geminiInput.value.trim(),
     sentences: sentences
   }
   SENTENCES = sentences;
@@ -477,7 +488,7 @@ async function generateSentences() {
 
   await playSentences(sentences, true)
 
-  await saveSentences(sentences)
+  await saveSentences(sentences, `Generate ${isNaN(Number(number)) ? 3 : Number(number)} distinct sentences in the ${targetLanguage} language according to the following guidelines or instructions: ${geminiInput.value.trim()}`)
 };
 
 
@@ -553,27 +564,32 @@ async function playSentences(sentences: Sentence[], translate: boolean, edit: bo
     p2.classList.add('translation');// Add a class for styling the translation
     p2.lang = lang.toLowerCase(); // Set the language attribute for the translation
     geminiOutput.appendChild(p2);
+    const x = `${100 / geminiOutput.children.length}%`;
+    geminiOutput.style.gridTemplateColumns =
+      Array.from(geminiOutput.children)
+      .map(p => x)
+      .join(' ')
   }
 
 
-  /**
-   * Translates a given sentence into the specified target language.
-   *
-   * @param text - The sentence to be translated.
-   * @param targetLang - The target language for translation (e.g., "Italian", "French").
-   * @returns A promise that resolves to the translated sentence as a string, or `null` if the target language is not provided or the translation is unavailable.
-   *
-   * @throws An error if the cloud function call fails or returns an unexpected response.
-   */
-  async function translateSentence(text: string, targetLang: string): Promise<string> {
-    if (!targetLang) return '';
-    const query = `Translate the following sentence to ${targetLang}: "${text}". Return only the translated sentence without any additional text."`;
-    const data = await callCloudFunction('ask', query, { noAudio: true });
-    const response: Sentence = data?.response;
-    return response?.text || ''; // Return the translation text or null if not available
-  }
 }
 
+/**
+ * Translates a given sentence into the specified target language.
+ *
+ * @param text - The sentence to be translated.
+ * @param targetLang - The target language for translation (e.g., "Italian", "French").
+ * @returns A promise that resolves to the translated sentence as a string, or `null` if the target language is not provided or the translation is unavailable.
+ *
+ * @throws An error if the cloud function call fails or returns an unexpected response.
+ */
+async function translateSentence(text: string, targetLang: string): Promise<string> {
+  if (!targetLang) return '';
+  const query = `Translate the following sentence into ${targetLang}: "${text}". Return only the translated sentence without any additional text or comment."`;
+  const data = await callCloudFunction('ask', query, { noAudio: true });
+  const response: Sentence = data?.response;
+  return response?.text || 'translation failed'; // Return the translation text or null if not available
+}
 
 /**
  * Plays an audio file associated with a given sentence, optionally translating the sentence and repeating the audio.
@@ -947,7 +963,7 @@ function openDatabase(): Promise<IDBDatabase> {
 * @returns A Promise that resolves when the operation is complete.
 */
 async function updateSavedQueries(newEntry: query): Promise<query[]> { // Adjusted return type for consistency
-  const MAX_RECORDS = 10;
+  const MAX_RECORDS = 20;
   // Ensure the new data has a timestamp
   newEntry.timestamp = Date.now();
 
@@ -1198,9 +1214,16 @@ async function getTranscriptionFromLinkToAudio() {
     if (audio)
       response.audio = audio; // Convert the ArrayBuffer to Uint8Array
     await playSentences([response], true, true);
-    //await saveSentences([response]);
+    const ask = prompt('If you want to save the audio and the transcription, please provide the name of the program', 'Rai Radio 3')
+    if(ask) await saveSentences([response], `Transcription: ${ask}`);
   }
   
+}
+
+async function deleteFileFromGoogleStorageBucket(fileURI:string) {
+  const fileName = fileURI.split('/')[0];
+  const response = await callCloudFunction('deleteFile', 'delete file from storage', {fileName:fileName})
+
 }
 
 function showProgress(message: string| null, clear: boolean = false) {
