@@ -324,11 +324,10 @@ async function readText(text) {
     await playSentences([response], false, false);
     await saveSentences([response], `Read this text: ${text.substring(30)}`);
     async function getAudio() {
-        const data = await callCloudFunction('read', text); // Call the askGemini function with the cloud function URL
-        const response = data === null || data === void 0 ? void 0 : data.response;
-        if (response === null || response === void 0 ? void 0 : response.audio)
-            return response;
-        const error = `No response received from Gemini API`;
+        const sentence = await callCloudFunction('read', text); // Call the askGemini function with the cloud function URL
+        if (sentence === null || sentence === void 0 ? void 0 : sentence.audio)
+            return sentence;
+        const error = `Could not get audio from Gemini Text-to-Speech API`;
         alert(error);
         throw new Error(error);
     }

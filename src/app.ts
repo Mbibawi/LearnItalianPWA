@@ -362,12 +362,11 @@ async function readText(text?:string):Promise<void | Sentence> {
 
   async function getAudio() {
   
-    const data = await callCloudFunction('read', text); // Call the askGemini function with the cloud function URL
+    const sentence:Sentence = await callCloudFunction('read', text); // Call the askGemini function with the cloud function URL
   
-    const response: Sentence = data?.response;
-    if (response?.audio) return response;
+    if (sentence?.audio) return sentence;
     
-    const error = `No response received from Gemini API`;
+    const error = `Could not get audio from Gemini Text-to-Speech API`;
     alert(error);
     throw new Error(error)
 
