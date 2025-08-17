@@ -1,4 +1,4 @@
-type Sentence = { text: string; audio: Buffer, translation?: string, uri?:string };
+type Sentence = { text: string; audio: Buffer, translation?: string, uri?: string };
 
 type RequestContent = { text: any[]; audio?: any[] };
 
@@ -23,7 +23,8 @@ type query = {
 }
 
 type ankiCard = {
-  text: string;
+  sentence: string;
+  csv: string;
   audio: {
     blob: Blob;
     name: string;

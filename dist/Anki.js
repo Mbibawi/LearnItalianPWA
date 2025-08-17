@@ -7,34 +7,42 @@ async function generateDeck() {
     const now = new Date().getTime();
     const deck = [];
     for (const [index, sentence] of sentences) {
-        const card = await processSentence(sentence, index, 'Italian', 'French', now);
+        //!We need the "for of" loop to pause execution for each sentence to respect the rate limit of the Text-To-Speech API.
+        if (!sentence)
+            continue; // Skip empty lines
+        const card = await addAudioBlob(sentence, index, now);
         deck.push(card);
     }
+    const translations = deck.map((card) => addTranslation(card, 'French'));
+    await Promise.all(translations);
     const csvContent = deck
-        .map(card => `${card.text}`)
+        .map(card => `${card.csv}`)
         .join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv' });
     downloadFile(blob, 'deck.csv');
     await downloadAudioFilesAsZip(deck, 'deckAudios.zip');
     return deck;
 }
-async function processSentence(sentence, index, sourceLang, targetLang, started) {
+async function addAudioBlob(sentence, index, started) {
     const batchNumber = Math.floor(index / 200);
     await pauseExecution(batchNumber, started); //Pausing the execution to respect quota limit of the Text-To-Speech API requests per minute which is 200 requests
-    let audioFileName = `italian15K-${index}.mp3`;
-    const translation = await translateSentence(sentence, targetLang);
-    const read = await readText(sentence);
-    let card = {
-        text: `[sound:${audioFileName}], ${sentence}, ${translation}`,
+    const card = {
+        sentence: sentence,
+        csv: '',
         audio: {
             blob: new Blob(),
-            name: audioFileName
+            name: `italian15K-${index}.mp3`
         },
     };
+    const read = await readText(sentence);
     //@ts-expect-error
     const uint8Array = new Uint8Array(read.audio.data);
     card.audio.blob = new Blob([uint8Array], { type: 'audio/mp3' });
     return card;
+}
+async function addTranslation(card, targetLang) {
+    const translation = await translateSentence(card.sentence, targetLang);
+    card.csv = `[sound:${card.audio.name}], ${card.sentence}, ${translation}`;
 }
 async function pauseExecution(batchNumber, started) {
     if (!batchNumber)

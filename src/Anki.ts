@@ -4,66 +4,72 @@ async function generateDeck() {
         .trim()
         .split('\n')
         .entries();
-    
+
     const now = new Date().getTime();
     const deck = [];
 
-    for (const [index, sentence] of sentences) { 
-        const card = await processSentence(sentence, index, 'Italian', 'French', now);
+    for (const [index, sentence] of sentences) {
+        //!We need the "for of" loop to pause execution for each sentence to respect the rate limit of the Text-To-Speech API.
+        if (!sentence) continue; // Skip empty lines
+        const card = await addAudioBlob(sentence, index, now);
         deck.push(card);
     }
-   
+
+    const translations = deck.map((card) => addTranslation(card, 'French'));
+
+    await Promise.all(translations);
+    
     const csvContent = deck
-        .map(card => `${card.text}`)
+        .map(card => `${card.csv}`)
         .join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv' });
 
     downloadFile(blob, 'deck.csv');
-    
-   await downloadAudioFilesAsZip(deck, 'deckAudios.zip');
-    
+
+    await downloadAudioFilesAsZip(deck, 'deckAudios.zip');
+
     return deck
 }
 
-async function processSentence(sentence: string, index: number, sourceLang: string, targetLang: string, started: number): Promise<ankiCard> {
+async function addAudioBlob(sentence: string, index: number, started: number): Promise<ankiCard> {
     const batchNumber = Math.floor(index / 200);
     await pauseExecution(batchNumber, started); //Pausing the execution to respect quota limit of the Text-To-Speech API requests per minute which is 200 requests
 
-    let audioFileName = `italian15K-${index}.mp3`;
-    const translation = await translateSentence(sentence, targetLang);
-    const read = await readText(sentence);
-    
-    let card:ankiCard = {
-        text: `[sound:${audioFileName}], ${sentence}, ${translation}`,
+    const card: ankiCard = {
+        sentence: sentence,
+        csv: '',
         audio: {
             blob: new Blob(),
-            name: audioFileName
+            name: `italian15K-${index}.mp3`
         },
     };
-
+    
+    const read = await readText(sentence);
     //@ts-expect-error
     const uint8Array = new Uint8Array(read.audio.data);
     card.audio.blob = new Blob([uint8Array], { type: 'audio/mp3' });
-    
-
     return card;
-
 }
 
-async function pauseExecution(batchNumber:number, started:number) {
+async function addTranslation(card: ankiCard,targetLang:string) {
+    const translation = await translateSentence(card.sentence, targetLang);
+    card.csv = `[sound:${card.audio.name}], ${card.sentence}, ${translation}`;
+}
+
+async function pauseExecution(batchNumber: number, started: number) {
     if (!batchNumber) return;
     const minute = 60 * 1000;
-    
+
     // Calculate the ideal time this sentence should be processed.
-        const startNewBatch = started + (minute * batchNumber);
-        
+    const startNewBatch = started + (minute * batchNumber);
+
     // Calculate how long to wait to align with the rate limit.
     const waitTime = startNewBatch - new Date().getTime();
 
-    if(waitTime <= 0) return;
-    
+    if (waitTime <= 0) return;
+
     console.log(`Waiting for ${waitTime}ms to respect rate limit.`);
-            // Pause execution without blocking the main thread.
+    // Pause execution without blocking the main thread.
     await new Promise(resolve => setTimeout(resolve, waitTime));
 }
 
@@ -77,7 +83,7 @@ function downloadFile(blob: Blob, fileName: string) {
     anchor.click();
     document.body.removeChild(anchor);
     URL.revokeObjectURL(url);
-    
+
 }
 
 /**
@@ -88,7 +94,7 @@ function downloadFile(blob: Blob, fileName: string) {
 async function downloadAudioFilesAsZip(deck: ankiCard[], zipFileName: string) {
     //@ts-expect-error
     const zip = new JSZip();
-  
+
     // Create an array of promises, each representing the addition of a file to the zip.
     const fetchPromises = deck.map(async card => {
         if (!card.audio.blob) return;
@@ -96,13 +102,13 @@ async function downloadAudioFilesAsZip(deck: ankiCard[], zipFileName: string) {
         zip.file(card.audio.name, card.audio.blob);
         console.log(`Added ${card.audio.name} to the zip archive.`);
     });
-  
+
     // Wait for all promises to settle (all files to be processed, regardless of success or failure).
     await Promise.all(fetchPromises);
-  
+
     // Generate the zip file as a Blob.
     const blob = await zip.generateAsync({ type: "blob" }) as Blob;
-  
+
     downloadFile(blob, zipFileName);
-    
-  }
+
+}
