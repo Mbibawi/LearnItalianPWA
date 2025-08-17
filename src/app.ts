@@ -669,7 +669,7 @@ function getAudioUrl(audio: Buffer) {
   const url = URL.createObjectURL(audioBlob);
  return url
 }
-
+  
 
 /**
  * Sends a query to a cloud function with specified voice and audio configuration parameters.

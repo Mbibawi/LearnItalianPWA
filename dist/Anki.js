@@ -19,14 +19,15 @@ async function processSentence(sentence, index, sourceLang, targetLang) {
     let card = {
         text: `[sound:${audioFileName}, ${sentence}, ${translation}]`,
         audio: {
-            url: '',
+            blob: new Blob(),
             name: audioFileName
         },
     };
-    if (read === null || read === void 0 ? void 0 : read.audio)
-        card.audio.url = getAudioUrl(read.audio);
-    else
-        card.audio.name = 'error.mp3';
+    const uint8Array = new Uint8Array(read.audio);
+    card.audio.blob = new Blob([uint8Array], { type: 'audio/mp3' });
+    //if (read?.audio)
+    // card.audio.url = getAudioUrl(read.audio);
+    // else card.audio.name = 'error.mp3';
     return card;
 }
 function downloadFile(blob, fileName) {
@@ -50,14 +51,16 @@ async function downloadAudioFilesAsZip(deck, zipFileName) {
     const zip = new JSZip();
     // Create an array of promises, each representing the addition of a file to the zip.
     const fetchPromises = deck.map(async (card) => {
+        if (!card.audio.blob)
+            return;
         try {
-            const response = await fetch(card.audio.url);
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status} for URL: ${card.audio.url}`);
-            }
-            const blob = await response.blob();
+            //const response = await fetch(card.audio.url);
+            //if (!response.ok) {
+            //throw new Error(`HTTP error! Status: ${response.status} for URL: ${card.audio.url}`);
+            //}
+            //const blob = await response.blob();
             // Add the file to the zip instance
-            zip.file(card.audio.name, blob);
+            zip.file(card.audio.name, card.audio.blob);
             console.log(`Added ${card.audio.name} to the zip archive.`);
         }
         catch (error) {

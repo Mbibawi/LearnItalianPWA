@@ -24,16 +24,20 @@ async function processSentence(sentence: string, index: number, sourceLang:strin
     let audioFileName = `italian15K-${index}.mp3`;
     const translation = await translateSentence(sentence, targetLang);
     const read = await readText(sentence) as {text:string, audio:Buffer};
-    let card = {
+    let card:ankiCard = {
         text: `[sound:${audioFileName}, ${sentence}, ${translation}]`,
         audio: {
-            url: '',
+            blob: new Blob(),
             name: audioFileName
         },
     };
-    if (read?.audio)
-        card.audio.url = getAudioUrl(read.audio);
-    else card.audio.name = 'error.mp3';
+
+    const uint8Array = new Uint8Array(read.audio);
+    card.audio.blob = new Blob([uint8Array], { type: 'audio/mp3' });
+    
+    //if (read?.audio)
+       // card.audio.url = getAudioUrl(read.audio);
+   // else card.audio.name = 'error.mp3';
 
     return card;
 }
@@ -63,14 +67,15 @@ async function downloadAudioFilesAsZip(deck: ankiCard[], zipFileName: string) {
   
     // Create an array of promises, each representing the addition of a file to the zip.
     const fetchPromises = deck.map(async card => {
+        if (!card.audio.blob) return;
       try {
-        const response = await fetch(card.audio.url);
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status} for URL: ${card.audio.url}`);
-        }
-        const blob = await response.blob();
+        //const response = await fetch(card.audio.url);
+        //if (!response.ok) {
+          //throw new Error(`HTTP error! Status: ${response.status} for URL: ${card.audio.url}`);
+        //}
+        //const blob = await response.blob();
         // Add the file to the zip instance
-        zip.file(card.audio.name, blob);
+        zip.file(card.audio.name, card.audio.blob);
         console.log(`Added ${card.audio.name} to the zip archive.`);
       } catch (error) {
         // Log the error but don't re-throw, allowing other downloads to proceed.
@@ -82,9 +87,9 @@ async function downloadAudioFilesAsZip(deck: ankiCard[], zipFileName: string) {
     await Promise.all(fetchPromises);
   
     // Generate the zip file as a Blob.
-    const content = await zip.generateAsync({ type: "blob" }) as Blob;
+    const blob = await zip.generateAsync({ type: "blob" }) as Blob;
   
-    downloadFile(content, zipFileName);
+    downloadFile(blob, zipFileName);
     
   }
 

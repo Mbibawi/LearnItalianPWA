@@ -25,7 +25,7 @@ type query = {
 type ankiCard = {
   text: string;
   audio: {
-    url: string;
+    blob: Blob;
     name: string;
   };
 }
