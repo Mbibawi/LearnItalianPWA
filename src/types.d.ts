@@ -1,4 +1,4 @@
-type Sentence = { text: string; audio: Uint8Array<ArrayBufferLike>, translation?: string, uri?:string };
+type Sentence = { text: string; audio: Buffer, translation?: string, uri?:string };
 
 type RequestContent = { text: any[]; audio?: any[] };
 
@@ -20,4 +20,12 @@ type query = {
   sentences: Sentence[];
   timestamp?: number;
   DBKey?: string;
+}
+
+type ankiCard = {
+  text: string;
+  audio: {
+    url: string;
+    name: string;
+  };
 }

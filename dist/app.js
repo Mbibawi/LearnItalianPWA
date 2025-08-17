@@ -545,9 +545,9 @@ async function playAudio(sentence, repeatCount = 1, pause = 1000) {
     if (!audio)
         return alert('No audio to play.');
     console.log('Playing audio for sentence:', text);
-    let src = `data:audio/mp3;base64,${Buffer.from(audio).toString('base64')}`;
-    if (!src.startsWith('data:'))
-        src = `data:audio/mp3;base64,${src}`;
+    let src = getAudioUrl(audio); // Get the audio URL from the Buffer string
+    //let src = `data:audio/mp3;base64,${Buffer.from(audio).toString('base64')}`;
+    //if (!src.startsWith('data:')) src = `data:audio/mp3;base64,${src}`;
     audioPlayer.src = src;
     audioPlayer.playbackRate = voiceRate.valueAsNumber;
     return new Promise((resolve, reject) => {
@@ -579,7 +579,7 @@ async function playAudio(sentence, repeatCount = 1, pause = 1000) {
     function delay(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
-    function getAudioURL(audio, mimeType) {
+    function _getAudioURL(audio, mimeType) {
         // Decode the Base64 audio string
         const audioBlob = b64toBlob(audio, mimeType);
         const audioUrl = URL.createObjectURL(audioBlob);
@@ -591,6 +591,12 @@ async function playAudio(sentence, repeatCount = 1, pause = 1000) {
         const byteArray = new Uint8Array(byteNumbers);
         return new Blob([byteArray], { type: mimeType });
     }
+}
+function getAudioUrl(audio) {
+    const audioUint8Array = new Uint8Array(audio);
+    const audioBlob = new Blob([audioUint8Array], { type: 'audio/mp3' });
+    const url = URL.createObjectURL(audioBlob);
+    return url;
 }
 /**
  * Sends a query to a cloud function with specified voice and audio configuration parameters.
@@ -1071,8 +1077,9 @@ async function getTranscriptionFromLinkToAudio() {
     processResponse();
     async function processResponse(audio) {
         showProgress(null, true);
-        if (audio)
-            response.audio = audio; // Convert the ArrayBuffer to Uint8Array
+        if (!audio)
+            return;
+        response.audio = audio;
         await playSentences([response], true, true);
         const ask = prompt('If you want to save the audio and the transcription, please provide the name of the program', 'Rai Radio 3');
         if (ask)

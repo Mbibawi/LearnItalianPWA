@@ -611,8 +611,9 @@ async function playAudio(sentence: Sentence, repeatCount: number = 1, pause: num
   if (!audio) return alert('No audio to play.');
 
   console.log('Playing audio for sentence:', text);
-  let src = `data:audio/mp3;base64,${Buffer.from(audio).toString('base64')}`;
-  if (!src.startsWith('data:')) src = `data:audio/mp3;base64,${src}`;
+  let src = getAudioUrl(audio); // Get the audio URL from the Buffer string
+  //let src = `data:audio/mp3;base64,${Buffer.from(audio).toString('base64')}`;
+  //if (!src.startsWith('data:')) src = `data:audio/mp3;base64,${src}`;
   audioPlayer.src = src;
   audioPlayer.playbackRate = voiceRate.valueAsNumber;
 
@@ -647,18 +648,26 @@ async function playAudio(sentence: Sentence, repeatCount: number = 1, pause: num
   }
 
 
-  function getAudioURL(audio: string, mimeType: string): string {
+  function _getAudioURL(audio: string, mimeType: string): string {
     // Decode the Base64 audio string
     const audioBlob = b64toBlob(audio, mimeType);
     const audioUrl = URL.createObjectURL(audioBlob);
     return audioUrl // Return both if needed
   }
+  
   function b64toBlob(base64: string, mimeType: string): Blob {
     const byteCharacters = atob(base64);
     const byteNumbers = new Array(byteCharacters.length).fill(0).map((_, i) => byteCharacters.charCodeAt(i));
     const byteArray = new Uint8Array(byteNumbers);
     return new Blob([byteArray], { type: mimeType });
   }
+}
+
+function getAudioUrl(audio: Buffer) {
+  const audioUint8Array = new Uint8Array(audio);    
+  const audioBlob = new Blob([audioUint8Array], { type: 'audio/mp3' });
+  const url = URL.createObjectURL(audioBlob);
+ return url
 }
 
 
@@ -1199,16 +1208,16 @@ async function getTranscriptionFromLinkToAudio() {
     const audioBlob = await audioResponse.blob();
     const reader = new FileReader();
     reader.readAsDataURL(audioBlob);
-    reader.onloadend = () => processResponse(reader.result as Uint8Array);
+    reader.onloadend = () => processResponse(reader.result as Buffer);
     return;
   }
 
   processResponse();
   
-  async function processResponse(audio?: Uint8Array) {
+  async function processResponse(audio?: Buffer) {
     showProgress(null, true);
-    if (audio)
-      response.audio = audio; // Convert the ArrayBuffer to Uint8Array
+    if (!audio) return;
+    response.audio = audio;
     await playSentences([response], true, true);
     const ask = prompt('If you want to save the audio and the transcription, please provide the name of the program', 'Rai Radio 3')
     if(ask) await saveSentences([response], `Transcription: ${ask}`);
