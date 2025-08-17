@@ -1,18 +1,21 @@
 "use strict";
-async function getCards() {
+async function generateDeck() {
     const sentences = geminiInput.value
         .trim()
-        .split('\n');
+        .split('\n')
+        .entries();
     const now = new Date().getTime();
-    const cards = sentences
-        .map(async (sentence, index) => await processSentence(sentence, index, 'Italian', 'French', now));
-    const deck = (await Promise.all(cards));
+    const deck = [];
+    for (const [index, sentence] of sentences) {
+        const card = await processSentence(sentence, index, 'Italian', 'French', now);
+        deck.push(card);
+    }
     const csvContent = deck
         .map(card => `"${card.text}"`)
         .join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv' });
     downloadFile(blob, 'deck.csv');
-    downloadAudioFilesAsZip(deck, 'deckAudios.zip');
+    await downloadAudioFilesAsZip(deck, 'deckAudios.zip');
     return deck;
 }
 async function processSentence(sentence, index, sourceLang, targetLang, started) {
