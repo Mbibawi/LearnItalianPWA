@@ -23,7 +23,8 @@ async function getCards() {
 async function processSentence(sentence: string, index: number, sourceLang:string, targetLang:string): Promise<ankiCard> {
     let audioFileName = `italian15K-${index}.mp3`;
     const translation = await translateSentence(sentence, targetLang);
-    const read = await readText(sentence) as {text:string, audio:Buffer};
+    const read = await readText(sentence);
+    
     let card:ankiCard = {
         text: `[sound:${audioFileName}, ${sentence}, ${translation}]`,
         audio: {
@@ -32,12 +33,10 @@ async function processSentence(sentence: string, index: number, sourceLang:strin
         },
     };
 
-    const uint8Array = new Uint8Array(read.audio);
+    //@ts-expect-error
+    const uint8Array = new Uint8Array(read.audio.data);
     card.audio.blob = new Blob([uint8Array], { type: 'audio/mp3' });
     
-    //if (read?.audio)
-       // card.audio.url = getAudioUrl(read.audio);
-   // else card.audio.name = 'error.mp3';
 
     return card;
 }
@@ -68,19 +67,9 @@ async function downloadAudioFilesAsZip(deck: ankiCard[], zipFileName: string) {
     // Create an array of promises, each representing the addition of a file to the zip.
     const fetchPromises = deck.map(async card => {
         if (!card.audio.blob) return;
-      try {
-        //const response = await fetch(card.audio.url);
-        //if (!response.ok) {
-          //throw new Error(`HTTP error! Status: ${response.status} for URL: ${card.audio.url}`);
-        //}
-        //const blob = await response.blob();
         // Add the file to the zip instance
         zip.file(card.audio.name, card.audio.blob);
         console.log(`Added ${card.audio.name} to the zip archive.`);
-      } catch (error) {
-        // Log the error but don't re-throw, allowing other downloads to proceed.
-        console.error(`Failed to fetch or add file: ${card.audio.name}`, error);
-      }
     });
   
     // Wait for all promises to settle (all files to be processed, regardless of success or failure).
