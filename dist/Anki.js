@@ -17,7 +17,7 @@ async function generateDeck() {
             continue; // Skip empty lines
         const card = await addAudioBlob(sentence, index, now);
         if (!card)
-            return; // Skip if card creation failed
+            continue; // Skip if card creation failed
         deck.push(card);
     }
     const translations = deck.map((card) => addTranslation(card, 'French'));

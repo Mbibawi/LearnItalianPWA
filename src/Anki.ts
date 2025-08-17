@@ -16,7 +16,7 @@ async function generateDeck() {
         };
         if (!sentence) continue; // Skip empty lines
         const card = await addAudioBlob(sentence, index, now);
-        if(!card) return; // Skip if card creation failed
+        if(!card) continue; // Skip if card creation failed
         deck.push(card);
     }
 
