@@ -10,9 +10,14 @@ async function generateDeck() {
 
     for (const [index, sentence] of sentences) {
         //!We need the "for of" loop to pause execution for each sentence to respect the rate limit of the Text-To-Speech API.
-        if ((index+1) % 1000 === 0) {
+        if ((index + 1) % 500 === 0) {
+            //Each 500 decks, we will process the translation and download the card that have been created so far.
             console.log('=======>Processing sentence:', index);
-            debugger
+            deck
+                .filter(card => !card.translation || card.translation.startsWith('translation failed'))
+                .filter((card, index)=>index<900)
+                .forEach(card => addTranslation(card, 'French'));
+                downloadDeck(deck);
         };
         if (!sentence) continue; // Skip empty lines
         const card = await addAudioBlob(sentence, index, now);
