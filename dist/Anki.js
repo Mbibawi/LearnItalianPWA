@@ -11,7 +11,7 @@ async function generateDeck() {
         deck.push(card);
     }
     const csvContent = deck
-        .map(card => `"${card.text}"`)
+        .map(card => `${card.text}`)
         .join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv' });
     downloadFile(blob, 'deck.csv');
