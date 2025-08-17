@@ -356,6 +356,8 @@ async function readText(text?:string):Promise<void | Sentence> {
 
   const response = await getAudio();
   
+  if (!response) return;
+  
   await playSentences([response], false, false);
 
   await saveSentences([response], `Read this text: ${text.substring(30)}`);
@@ -368,7 +370,8 @@ async function readText(text?:string):Promise<void | Sentence> {
     
     const error = `Could not get audio from Gemini Text-to-Speech API`;
     alert(error);
-    throw new Error(error)
+    console.error(error);
+    //throw new Error(error)
 
   }
 

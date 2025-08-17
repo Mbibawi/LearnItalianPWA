@@ -321,6 +321,8 @@ async function readText(text) {
     }
     //if(!language) language = targetLangSelect.options[targetLangSelect.selectedIndex]?.textContent || 'English';
     const response = await getAudio();
+    if (!response)
+        return;
     await playSentences([response], false, false);
     await saveSentences([response], `Read this text: ${text.substring(30)}`);
     async function getAudio() {
@@ -329,7 +331,8 @@ async function readText(text) {
             return sentence;
         const error = `Could not get audio from Gemini Text-to-Speech API`;
         alert(error);
-        throw new Error(error);
+        console.error(error);
+        //throw new Error(error)
     }
 }
 function _getSavedQueries() {

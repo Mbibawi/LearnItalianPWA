@@ -24,6 +24,7 @@ type query = {
 
 type ankiCard = {
   sentence: string;
+  translation: string;
   csv: string;
   audio: {
     blob: Blob;
