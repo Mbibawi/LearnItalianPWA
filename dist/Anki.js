@@ -3,16 +3,21 @@ async function getCards() {
     const sentences = geminiInput.value
         .trim()
         .split('\n');
+    const now = new Date().getTime();
     const cards = sentences
-        .map(async (sentence, index) => await processSentence(sentence, index, 'Italian', 'French'));
+        .map(async (sentence, index) => await processSentence(sentence, index, 'Italian', 'French', now));
     const deck = (await Promise.all(cards));
-    const csvContent = deck.map(card => `"${card.text}"`).join('\n');
+    const csvContent = deck
+        .map(card => `"${card.text}"`)
+        .join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv' });
     downloadFile(blob, 'deck.csv');
     downloadAudioFilesAsZip(deck, 'deckAudios.zip');
     return deck;
 }
-async function processSentence(sentence, index, sourceLang, targetLang) {
+async function processSentence(sentence, index, sourceLang, targetLang, started) {
+    const batchNumber = Math.floor(index / 200);
+    await pauseExecution(batchNumber, started); //Pausing the execution to respect quota limit of the Text-To-Speech API requests per minute which is 200 requests
     let audioFileName = `italian15K-${index}.mp3`;
     const translation = await translateSentence(sentence, targetLang);
     const read = await readText(sentence);
@@ -27,6 +32,20 @@ async function processSentence(sentence, index, sourceLang, targetLang) {
     const uint8Array = new Uint8Array(read.audio.data);
     card.audio.blob = new Blob([uint8Array], { type: 'audio/mp3' });
     return card;
+}
+async function pauseExecution(batchNumber, started) {
+    if (!batchNumber)
+        return;
+    const minute = 60 * 1000;
+    // Calculate the ideal time this sentence should be processed.
+    const startNewBatch = started + (minute * batchNumber);
+    // Calculate how long to wait to align with the rate limit.
+    const waitTime = startNewBatch - new Date().getTime();
+    if (waitTime <= 0)
+        return;
+    console.log(`Waiting for ${waitTime}ms to respect rate limit.`);
+    // Pause execution without blocking the main thread.
+    await new Promise(resolve => setTimeout(resolve, waitTime));
 }
 function downloadFile(blob, fileName) {
     const url = URL.createObjectURL(blob);
