@@ -22,13 +22,16 @@ async function generateDeck() {
     }
     const translations = deck.map((card) => addTranslation(card, 'French'));
     await Promise.all(translations);
+    downloadDeck(deck);
+    return deck;
+}
+function downloadDeck(deck) {
     const csvContent = deck
         .map(card => `${card.csv}`)
         .join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv' });
-    downloadFile(blob, 'deck.csv');
-    await downloadAudioFilesAsZip(deck, 'deckAudios.zip');
-    return deck;
+    downloadFile(blob, `DeckCSV_1to${deck.length + 1}.csv`);
+    downloadAudioFilesAsZip(deck, `DeckAudios_1to${deck.length + 1}.zip`);
 }
 async function addAudioBlob(sentence, index, started) {
     const batchNumber = Math.floor(index / 200);

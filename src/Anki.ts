@@ -24,16 +24,21 @@ async function generateDeck() {
 
     await Promise.all(translations);
     
-    const csvContent = deck
+    downloadDeck(deck);
+    return deck
+}
+
+function downloadDeck(deck: ankiCard[]) {
+        const csvContent = deck
         .map(card => `${card.csv}`)
         .join('\n');
+        
     const blob = new Blob([csvContent], { type: 'text/csv' });
 
-    downloadFile(blob, 'deck.csv');
+    downloadFile(blob, `DeckCSV_1to${deck.length +1}.csv`);
 
-    await downloadAudioFilesAsZip(deck, 'deckAudios.zip');
+    downloadAudioFilesAsZip(deck, `DeckAudios_1to${deck.length +1}.zip`);
 
-    return deck
 }
 
 async function addAudioBlob(sentence: string, index: number, started: number): Promise<ankiCard|undefined> {
