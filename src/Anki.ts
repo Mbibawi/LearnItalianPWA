@@ -130,3 +130,27 @@ async function downloadAudioFilesAsZip(deck: ankiCard[], zipFileName: string) {
     downloadFile(blob, zipFileName);
 
 }
+
+async function _FixTranslationFailed() {
+    const deck = [];
+    const sentences = geminiInput.value
+        .trim()
+        .split('\n');
+    debugger
+    for (const sentence of sentences) { 
+        if (!sentence.includes('translation failed')) {
+            deck.push(sentence)
+            continue
+        }
+        const italian = sentence.split(',')[1].trim();
+        const translation = await translateSentence(italian, 'French');
+        const fixed = sentence.replace('translation failed', translation);
+        deck.push(fixed);
+
+    }
+
+    const csvContent = deck.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    downloadFile(blob, `FixedTranslations_1to${deck.length +1}.csv`);
+
+    }
