@@ -520,10 +520,10 @@ async function playSentences(sentences, translate, edit = true) {
 async function translateSentence(text, targetLang) {
     if (!targetLang)
         return '';
-    const query = `Translate the following sentence into ${targetLang}: "${text}". Return only the translated sentence without any additional text or comment."`;
+    const query = `Translate the following sentence into ${targetLang}: "${text}". Return only the translation of the sentence without any additional text or comment."`;
     const data = await callCloudFunction('ask', query, { noAudio: true });
     const response = data === null || data === void 0 ? void 0 : data.response;
-    return (response === null || response === void 0 ? void 0 : response.text) || 'translation failed'; // Return the translation text or null if not available
+    return (response === null || response === void 0 ? void 0 : response.text) || null; // Return the translation text or null if not available
 }
 /**
  * Plays an audio file associated with a given sentence, optionally translating the sentence and repeating the audio.

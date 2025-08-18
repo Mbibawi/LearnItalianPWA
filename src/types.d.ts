@@ -24,10 +24,10 @@ type query = {
 
 type ankiCard = {
   sentence: string;
-  translation: string;
+  translation: string | null;
   csv: string;
   audio: {
-    blob: Blob;
+    blob: Blob | null;
     name: string;
   };
 }

@@ -355,7 +355,7 @@ async function readText(text?:string):Promise<void | Sentence> {
   //if(!language) language = targetLangSelect.options[targetLangSelect.selectedIndex]?.textContent || 'English';
 
   const response = await getAudio();
-  
+
   if (!response) return;
   
   await playSentences([response], false, false);
@@ -583,12 +583,12 @@ async function playSentences(sentences: Sentence[], translate: boolean, edit: bo
  *
  * @throws An error if the cloud function call fails or returns an unexpected response.
  */
-async function translateSentence(text: string, targetLang: string): Promise<string> {
+async function translateSentence(text: string, targetLang: string): Promise<string | null> {
   if (!targetLang) return '';
-  const query = `Translate the following sentence into ${targetLang}: "${text}". Return only the translated sentence without any additional text or comment."`;
+  const query = `Translate the following sentence into ${targetLang}: "${text}". Return only the translation of the sentence without any additional text or comment."`;
   const data = await callCloudFunction('ask', query, { noAudio: true });
   const response: Sentence = data?.response;
-  return response?.text || 'translation failed'; // Return the translation text or null if not available
+  return response?.text || null; // Return the translation text or null if not available
 }
 
 /**

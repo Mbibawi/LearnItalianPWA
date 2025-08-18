@@ -14,8 +14,8 @@ async function generateDeck() {
             //Each 500 decks, we will process the translation and download the card that have been created so far.
             console.log('=======>Processing sentence:', index);
             deck
-                .filter(card => !card.translation || card.translation.startsWith('translation failed'))
-                .filter((card, index)=>index<900)
+                .filter(card => !card.translation)
+                .filter((card, index)=>index<1000)
                 .forEach(card => addTranslation(card, 'French'));
                 downloadDeck(deck);
         };
@@ -40,9 +40,9 @@ function downloadDeck(deck: ankiCard[]) {
         
     const blob = new Blob([csvContent], { type: 'text/csv' });
 
-    downloadFile(blob, `DeckCSV_1to${deck.length +1}.csv`);
+    downloadFile(blob, `DeckCSV_1to${deck.length}.csv`);
 
-    downloadAudioFilesAsZip(deck, `DeckAudios_1to${deck.length +1}.zip`);
+    downloadAudioFilesAsZip(deck, `DeckAudios_1to${deck.length}.zip`);
 
 }
 
@@ -52,11 +52,11 @@ async function addAudioBlob(sentence: string, index: number, started: number): P
 
     const card: ankiCard = {
         sentence: sentence,
-        translation: '',
+        translation: null,
         csv: '',
         audio: {
-            blob: new Blob(),
-            name: `italian15K-${index+1}.mp3`
+            blob: null,
+            name: `Deck${started}-${index+1}.mp3`//e.g 'Deck1755483404267-200.mp3'
         },
     };
     
@@ -70,8 +70,10 @@ async function addAudioBlob(sentence: string, index: number, started: number): P
 
 async function addTranslation(card: ankiCard, targetLang: string) {
     if(card.translation) return; // Skip if translation already exists
-    card.translation = await translateSentence(card.sentence, targetLang);
-    card.csv = `[sound:${card.audio.name}], ${card.sentence}, ${card.translation}`;
+    const translation = await translateSentence(card.sentence, targetLang);
+    if (!translation) return console.warn(`Translation failed for: ${card.sentence}`);
+    card.translation = translation;
+    card.csv = `[sound:${card.audio.name}] | ${card.sentence} | ${translation}`;
 }
 
 async function pauseExecution(batchNumber: number, started: number) {
@@ -138,13 +140,13 @@ async function _FixTranslationFailed() {
         .split('\n');
     debugger
     for (const sentence of sentences) { 
-        if (!sentence.includes('translation failed')) {
+        if (!sentence.includes('TranslationFailed')) {
             deck.push(sentence)
             continue
         }
         const italian = sentence.split(',')[1].trim();
-        const translation = await translateSentence(italian, 'French');
-        const fixed = sentence.replace('translation failed', translation);
+        const translation = await translateSentence(italian, 'French') || 'TranslationFailed';
+        const fixed = sentence.replace('TranslationFailed', translation);
         deck.push(fixed);
 
     }
