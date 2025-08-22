@@ -613,7 +613,8 @@ async function playAudio(sentence: Sentence, repeatCount: number = 1, pause: num
   // Display the text in the UI
   if (!audio) return alert('No audio to play.');
   console.log('Playing audio for sentence:', text);
-  let src = getAudioUrl(audio); // Get the audio URL from the Buffer string
+  //@ts-ignore
+  let src = getAudioUrl(audio.data); // Get the audio URL from the Buffer string
   //let src = `data:audio/mp3;base64,${Buffer.from(audio).toString('base64')}`;
   //if (!src.startsWith('data:')) src = `data:audio/mp3;base64,${src}`;
   audioPlayer.src = src;
