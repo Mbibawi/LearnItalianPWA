@@ -667,8 +667,7 @@ async function playAudio(sentence: Sentence, repeatCount: number = 1, pause: num
 }
 
 function getAudioUrl(audio: Buffer) {
-  //@ts-expect-error
-  const audioUint8Array = new Uint8Array(audio.data);
+  const audioUint8Array = new Uint8Array(audio);
   const audioBlob = new Blob([audioUint8Array], { type: 'audio/mp3' });
   const url = URL.createObjectURL(audioBlob);
  return url
