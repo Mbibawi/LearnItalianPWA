@@ -53,8 +53,7 @@ async function addAudioBlob(sentence, index, started) {
     const speech = await readText(sentence);
     if (!speech)
         return undefined; // Skip if speech generation failed
-    //@ts-expect-error
-    const uint8Array = new Uint8Array(speech.audio.data);
+    const uint8Array = new Uint8Array(speech.audio);
     card.audio.blob = new Blob([uint8Array], { type: 'audio/mp3' });
     return card;
 }

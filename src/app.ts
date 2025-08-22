@@ -612,7 +612,6 @@ async function playAudio(sentence: Sentence, repeatCount: number = 1, pause: num
   const { text, audio } = sentence;
   // Display the text in the UI
   if (!audio) return alert('No audio to play.');
-
   console.log('Playing audio for sentence:', text);
   let src = getAudioUrl(audio); // Get the audio URL from the Buffer string
   //let src = `data:audio/mp3;base64,${Buffer.from(audio).toString('base64')}`;
@@ -667,7 +666,8 @@ async function playAudio(sentence: Sentence, repeatCount: number = 1, pause: num
 }
 
 function getAudioUrl(audio: Buffer) {
-  const audioUint8Array = new Uint8Array(audio);    
+  //@ts-expect-error
+  const audioUint8Array = new Uint8Array(audio.data);
   const audioBlob = new Blob([audioUint8Array], { type: 'audio/mp3' });
   const url = URL.createObjectURL(audioBlob);
  return url

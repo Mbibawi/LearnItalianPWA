@@ -7,7 +7,7 @@ async function generateDeck() {
 
     const now = new Date().getTime();
     const deck = [];
-
+    
     for (const [index, sentence] of sentences) {
         //!We need the "for of" loop to pause execution for each sentence to respect the rate limit of the Text-To-Speech API.
         if ((index + 1) % 500 === 0) {
@@ -62,8 +62,7 @@ async function addAudioBlob(sentence: string, index: number, started: number): P
     
     const speech = await readText(sentence);
     if (!speech) return undefined; // Skip if speech generation failed
-    //@ts-expect-error
-    const uint8Array = new Uint8Array(speech.audio.data);
+    const uint8Array = new Uint8Array(speech.audio);
     card.audio.blob = new Blob([uint8Array], { type: 'audio/mp3' });
     return card;
 }
