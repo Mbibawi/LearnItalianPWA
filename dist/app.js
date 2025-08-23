@@ -98,6 +98,7 @@ const sendQueryBtn = document.getElementById('askGemini');
 const sentencesBtn = document.getElementById('getSentences');
 const readBtn = document.getElementById('readText');
 const transcribeBtn = document.getElementById('transcribeAudio');
+const translateBtn = document.getElementById('translateText');
 const preFilled = [
     sourceLangSelect,
     targetLangSelect,
@@ -149,6 +150,7 @@ sentencesBtn.onclick = generateSentences;
 sendQueryBtn.onclick = askGemini;
 readBtn.onclick = () => readText();
 transcribeBtn.onclick = getTranscriptionFromLinkToAudio;
+translateBtn.onclick = async () => geminiOutput.textContent = await translateSentence() || 'Translation Failed';
 // Language selection handlers
 (function populateVoiceOptions() {
     // Array of available voice options for the Text-to-Speech API
@@ -450,19 +452,19 @@ async function generateSentences() {
  * Note: The function is asynchronous and relies on `playAudio` for individual sentence playback.
  */
 async function playSentences(sentences, translate, edit = true) {
-    var _a;
     if (!(sentences === null || sentences === void 0 ? void 0 : sentences.length))
         return;
-    const lang = ((_a = sourceLangSelect.options[sourceLangSelect.selectedIndex]) === null || _a === void 0 ? void 0 : _a.textContent) || 'English'; //We will use the source language and translate the text to it
+    const sourceLang = sourceLangSelect.options[sourceLangSelect.selectedIndex];
+    const targetLang = targetLangSelect.options[sourceLangSelect.selectedIndex];
+    const lang = sourceLang.textContent || 'English'; //We will use the source language and translate the text to it
     const loop = document.getElementById('loop');
     audioPlayer.loop = false;
     geminiOutput.ondblclick = () => play(false); // Allow replaying the sentences by double-clicking on the output div
     try {
         if (translate) {
             for (const sentence of sentences) {
-                sentence.translation = await translateSentence(sentence.text, lang) || '';
-                if (sentence.translation)
-                    sentence.translation = `(${lang} = ${sentence.translation})\n`;
+                //sentence.translation = await translateSentence(sentence.text, lang) || '';
+                sentence.translation = await translateSentence(sentence.text) || '';
             }
         }
         await play(edit); // Play the sentences with the specified parameters
@@ -517,13 +519,35 @@ async function playSentences(sentences, translate, edit = true) {
  *
  * @throws An error if the cloud function call fails or returns an unexpected response.
  */
-async function translateSentence(text, targetLang) {
+async function translateSentence(text, targetLang = null, sourceLang = null) {
+    var _a, _b;
+    if (!text)
+        text = geminiInput.value.trim();
     if (!targetLang)
-        return '';
-    const query = `Translate the following sentence into ${targetLang}: "${text}". Return only the translation of the sentence without any additional text or comment."`;
-    const data = await callCloudFunction('ask', query, { noAudio: true });
-    const response = data === null || data === void 0 ? void 0 : data.response;
-    return (response === null || response === void 0 ? void 0 : response.text) || null; // Return the translation text or null if not available
+        targetLang = (_a = targetLangSelect.selectedOptions[0]) === null || _a === void 0 ? void 0 : _a.value;
+    if (!sourceLang)
+        sourceLang = (_b = sourceLangSelect.selectedOptions[0]) === null || _b === void 0 ? void 0 : _b.value;
+    if (!targetLang || !sourceLang) {
+        console.log('either the Target language or the Source langauge are missing');
+        return null;
+    }
+    ;
+    return await withGoogleTranslate();
+    async function withGoogleTranslate() {
+        const languageCode = (lang) => lang ? `${lang.toLowerCase()}-${lang.toUpperCase()}` : null;
+        const data = await callCloudFunction('translate', text, { noAudio: true, sourceLanguage: languageCode(sourceLang), targetLanguage: languageCode(targetLang) });
+        const response = data === null || data === void 0 ? void 0 : data.response;
+        return (response === null || response === void 0 ? void 0 : response.text) || null; // Return the translation text or null if not available
+    }
+    async function withGemini() {
+        const query = `Translate the following sentence into ${targetLang}: "${text}". Return only the translation of the sentence without any additional text or comment."`;
+        const data = await callCloudFunction('ask', query, { noAudio: true });
+        const response = data === null || data === void 0 ? void 0 : data.response;
+        const translation = response.text;
+        if (!translation)
+            return null;
+        return `(${targetLang} = ${translation})\n`;
+    }
 }
 /**
  * Plays an audio file associated with a given sentence, optionally translating the sentence and repeating the audio.

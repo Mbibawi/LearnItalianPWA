@@ -14,7 +14,7 @@ async function generateDeck() {
             deck
                 .filter(card => !card.translation)
                 .filter((card, index) => index < 1000)
-                .forEach(card => addTranslation(card, 'French'));
+                .forEach(card => addTranslation(card));
             downloadDeck(deck);
         }
         ;
@@ -25,7 +25,7 @@ async function generateDeck() {
             continue; // Skip if card creation failed
         deck.push(card);
     }
-    const translations = deck.map((card) => addTranslation(card, 'French'));
+    const translations = deck.map((card) => addTranslation(card));
     await Promise.all(translations);
     downloadDeck(deck);
     return deck;
@@ -58,10 +58,15 @@ async function addAudioBlob(sentence, index, started) {
     card.audio.blob = new Blob([uint8Array], { type: 'audio/mp3' });
     return card;
 }
-async function addTranslation(card, targetLang) {
+async function addTranslation(card, targetLang, sourceLang) {
+    var _a, _b;
     if (card.translation)
         return; // Skip if translation already exists
-    const translation = await translateSentence(card.sentence, targetLang);
+    if (!sourceLang)
+        targetLang = (_a = sourceLangSelect.selectedOptions[0]) === null || _a === void 0 ? void 0 : _a.value;
+    if (!targetLang)
+        targetLang = (_b = targetLangSelect.selectedOptions[0]) === null || _b === void 0 ? void 0 : _b.value;
+    const translation = await translateSentence(card.sentence, targetLang, sourceLang);
     if (!translation)
         return console.warn(`Translation failed for: ${card.sentence}`);
     card.translation = translation;
@@ -126,7 +131,7 @@ async function _FixTranslationFailed() {
             continue;
         }
         const italian = sentence.split(',')[1].trim();
-        const translation = await translateSentence(italian, 'French') || 'TranslationFailed';
+        const translation = await translateSentence(italian) || 'TranslationFailed';
         const fixed = sentence.replace('TranslationFailed', translation);
         deck.push(fixed);
     }

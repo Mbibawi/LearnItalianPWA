@@ -16,7 +16,7 @@ async function generateDeck() {
             deck
                 .filter(card => !card.translation)
                 .filter((card, index)=>index<1000)
-                .forEach(card => addTranslation(card, 'French'));
+                .forEach(card => addTranslation(card));
                 downloadDeck(deck);
         };
         if (!sentence) continue; // Skip empty lines
@@ -25,7 +25,7 @@ async function generateDeck() {
         deck.push(card);
     }
 
-    const translations = deck.map((card) => addTranslation(card, 'French'));
+    const translations = deck.map((card) => addTranslation(card));
 
     await Promise.all(translations);
     
@@ -68,9 +68,11 @@ async function addAudioBlob(sentence: string, index: number, started: number): P
     return card;
 }
 
-async function addTranslation(card: ankiCard, targetLang: string) {
-    if(card.translation) return; // Skip if translation already exists
-    const translation = await translateSentence(card.sentence, targetLang);
+async function addTranslation(card: ankiCard, targetLang?: string, sourceLang?:string) {
+    if (card.translation) return; // Skip if translation already exists
+    if(!sourceLang) targetLang = sourceLangSelect.selectedOptions[0]?.value;
+    if(!targetLang) targetLang = targetLangSelect.selectedOptions[0]?.value;
+    const translation = await translateSentence(card.sentence, targetLang,sourceLang);
     if (!translation) return console.warn(`Translation failed for: ${card.sentence}`);
     card.translation = translation;
     card.csv = `[sound:${card.audio.name}] | ${card.sentence} | ${translation}`;
@@ -145,7 +147,7 @@ async function _FixTranslationFailed() {
             continue
         }
         const italian = sentence.split(',')[1].trim();
-        const translation = await translateSentence(italian, 'French') || 'TranslationFailed';
+        const translation = await translateSentence(italian) || 'TranslationFailed';
         const fixed = sentence.replace('TranslationFailed', translation);
         deck.push(fixed);
 
