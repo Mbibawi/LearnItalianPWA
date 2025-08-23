@@ -1,4 +1,5 @@
 
+createDeck.onclick = generateDeck;
 async function generateDeck() {
     const sentences = geminiInput.value
         .trim()

@@ -174,7 +174,7 @@ sendQueryBtn.onclick = askGemini;
 readBtn.onclick = ()=>readText();
 transcribeBtn.onclick = getTranscriptionFromLinkToAudio;
 translateBtn.onclick = async ()=>geminiOutput.textContent = await translateSentence() || 'Translation Failed';
-translateBtn.onclick = generateDeck;
+
 
 // Language selection handlers
 (function populateVoiceOptions() {
