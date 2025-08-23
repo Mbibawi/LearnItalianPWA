@@ -606,9 +606,7 @@ async function translateSentence(text?: string, targetLang: string|null = null, 
     const languageCode = (lang: string | null) => lang ? `${lang.toLowerCase()}-${lang.toUpperCase()}` : null;
     const sourceLanguageCode =languageCode(sourceLang);
     const targetLanguageCode =languageCode(targetLang);
-    const data = await callCloudFunction('translate', text, { noAudio: true, sourceLanguageCode, targetLanguageCode});
-
-    const response: Sentence = data?.response;
+    const response = await callCloudFunction('translate', text, { noAudio: true, sourceLanguageCode, targetLanguageCode});
     return response?.text || null; // Return the translation text or null if not available
   }
 

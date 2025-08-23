@@ -537,8 +537,7 @@ async function translateSentence(text, targetLang = null, sourceLang = null) {
         const languageCode = (lang) => lang ? `${lang.toLowerCase()}-${lang.toUpperCase()}` : null;
         const sourceLanguageCode = languageCode(sourceLang);
         const targetLanguageCode = languageCode(targetLang);
-        const data = await callCloudFunction('translate', text, { noAudio: true, sourceLanguageCode, targetLanguageCode });
-        const response = data === null || data === void 0 ? void 0 : data.response;
+        const response = await callCloudFunction('translate', text, { noAudio: true, sourceLanguageCode, targetLanguageCode });
         return (response === null || response === void 0 ? void 0 : response.text) || null; // Return the translation text or null if not available
     }
     async function withGemini() {
