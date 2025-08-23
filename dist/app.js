@@ -99,6 +99,7 @@ const sentencesBtn = document.getElementById('getSentences');
 const readBtn = document.getElementById('readText');
 const transcribeBtn = document.getElementById('transcribeAudio');
 const translateBtn = document.getElementById('translateText');
+const createDeck = document.getElementById('createDeck');
 const preFilled = [
     sourceLangSelect,
     targetLangSelect,
@@ -151,6 +152,7 @@ sendQueryBtn.onclick = askGemini;
 readBtn.onclick = () => readText();
 transcribeBtn.onclick = getTranscriptionFromLinkToAudio;
 translateBtn.onclick = async () => geminiOutput.textContent = await translateSentence() || 'Translation Failed';
+translateBtn.onclick = generateDeck;
 // Language selection handlers
 (function populateVoiceOptions() {
     // Array of available voice options for the Text-to-Speech API
@@ -524,9 +526,9 @@ async function translateSentence(text, targetLang = null, sourceLang = null) {
     if (!text)
         text = geminiInput.value.trim();
     if (!targetLang)
-        targetLang = (_a = targetLangSelect.selectedOptions[0]) === null || _a === void 0 ? void 0 : _a.value;
+        targetLang = (_a = targetLangSelect.options[targetLangSelect.selectedIndex]) === null || _a === void 0 ? void 0 : _a.value;
     if (!sourceLang)
-        sourceLang = (_b = sourceLangSelect.selectedOptions[0]) === null || _b === void 0 ? void 0 : _b.value;
+        sourceLang = (_b = sourceLangSelect.options[sourceLangSelect.selectedIndex]) === null || _b === void 0 ? void 0 : _b.value;
     if (!targetLang || !sourceLang) {
         console.log('either the Target language or the Source langauge are missing');
         return null;
