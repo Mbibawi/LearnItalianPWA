@@ -1,6 +1,12 @@
 
 createDeck.onclick = generateDeck;
 async function generateDeck() {
+    const sourceLang = sourceLangSelect.selectedOptions[0]?.value || null;
+    const targetLang = targetLangSelect.selectedOptions[0]?.value || null;
+
+    if (!sourceLang || !targetLang || !confirm(`Source Language: ${sourceLang}\nTarget Language:${targetLang}`))
+        return console.warn(`Canceled by user or for missing language: Source Language: ${sourceLang}\nTarget Language:${targetLang}`);
+
     const sentences = geminiInput.value
         .trim()
         .split('\n')
@@ -17,7 +23,7 @@ async function generateDeck() {
             deck
                 .filter(card => !card.translation)
                 .filter((card, index)=>index<1000)
-                .forEach(card => addTranslation(card));
+                .forEach(card => addTranslation(card, targetLang, sourceLang));
                 downloadDeck(deck);
         };
         if (!sentence) continue; // Skip empty lines
@@ -26,7 +32,7 @@ async function generateDeck() {
         deck.push(card);
     }
 
-    const translations = deck.map((card) => addTranslation(card));
+    const translations = deck.map((card) => addTranslation(card, targetLang, sourceLang));
 
     await Promise.all(translations);
     
@@ -69,10 +75,8 @@ async function addAudioBlob(sentence: string, index: number, started: number): P
     return card;
 }
 
-async function addTranslation(card: ankiCard, targetLang?: string, sourceLang?:string) {
+async function addTranslation(card: ankiCard, targetLang: string, sourceLang:string) {
     if (card.translation) return; // Skip if translation already exists
-    if(!sourceLang) sourceLang = sourceLangSelect.selectedOptions[0]?.value;
-    if(!targetLang) targetLang = targetLangSelect.selectedOptions[0]?.value;
     const translation = await translateSentence(card.sentence, targetLang,sourceLang);
     if (!translation) return console.warn(`Translation failed for: ${card.sentence}`);
     card.translation = translation;
