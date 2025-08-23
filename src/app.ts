@@ -604,8 +604,9 @@ async function translateSentence(text?: string, targetLang: string|null = null, 
 
   async function withGoogleTranslate() { 
     const languageCode = (lang: string | null) => lang ? `${lang.toLowerCase()}-${lang.toUpperCase()}` : null;
-    
-    const data = await callCloudFunction('translate', text, { noAudio: true, sourceLanguage: languageCode(sourceLang), targetLanguage: languageCode(targetLang) });
+    const sourceLanguageCode =languageCode(sourceLang);
+    const targetLanguageCode =languageCode(targetLang);
+    const data = await callCloudFunction('translate', text, { noAudio: true, sourceLanguageCode, targetLanguageCode});
 
     const response: Sentence = data?.response;
     return response?.text || null; // Return the translation text or null if not available
