@@ -730,10 +730,10 @@ function getLanguageCode() {
     let code;
     if (voice.lang && voice.dataset.country)
         code = `${voice.lang.toLowerCase()}-${voice.dataset.country}`;
-    const targetLang = targetLangSelect.options[targetLangSelect.selectedIndex];
-    if (!targetLang)
+    const sourceLang = sourceLangSelect.options[sourceLangSelect.selectedIndex];
+    if (!sourceLang)
         code = "en-GB";
-    let lang = targetLang.value;
+    let lang = sourceLang.value;
     if (lang === 'en')
         code = `${lang.toLowerCase()}-GB`;
     else
