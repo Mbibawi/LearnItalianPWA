@@ -64,7 +64,7 @@ async function addTranslation(card, targetLang, sourceLang) {
     if (card.translation)
         return; // Skip if translation already exists
     if (!sourceLang)
-        targetLang = (_a = sourceLangSelect.selectedOptions[0]) === null || _a === void 0 ? void 0 : _a.value;
+        sourceLang = (_a = sourceLangSelect.selectedOptions[0]) === null || _a === void 0 ? void 0 : _a.value;
     if (!targetLang)
         targetLang = (_b = targetLangSelect.selectedOptions[0]) === null || _b === void 0 ? void 0 : _b.value;
     const translation = await translateSentence(card.sentence, targetLang, sourceLang);

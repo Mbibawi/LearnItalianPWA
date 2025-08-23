@@ -71,7 +71,7 @@ async function addAudioBlob(sentence: string, index: number, started: number): P
 
 async function addTranslation(card: ankiCard, targetLang?: string, sourceLang?:string) {
     if (card.translation) return; // Skip if translation already exists
-    if(!sourceLang) targetLang = sourceLangSelect.selectedOptions[0]?.value;
+    if(!sourceLang) sourceLang = sourceLangSelect.selectedOptions[0]?.value;
     if(!targetLang) targetLang = targetLangSelect.selectedOptions[0]?.value;
     const translation = await translateSentence(card.sentence, targetLang,sourceLang);
     if (!translation) return console.warn(`Translation failed for: ${card.sentence}`);
