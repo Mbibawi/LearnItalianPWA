@@ -115,6 +115,11 @@ const preFilled = [
   voicePitch
 ];
 
+function selectedOption(select: HTMLSelectElement) {
+  const selected = select.options[select.selectedIndex];
+  if (!selected) throw new Error('No option is selected');
+  return selected
+};
 
 function appendAudioPlayer() {
   const div = document.createElement('div');
@@ -175,6 +180,47 @@ readBtn.onclick = ()=>readText();
 transcribeBtn.onclick = getTranscriptionFromLinkToAudio;
 translateBtn.onclick = async ()=>geminiOutput.textContent = await translateSentence() || 'Translation Failed';
 
+(function populateSelectLanguageOptions() {
+  const languages = [
+    {
+      value: 'fr-FR',
+      text: 'French'
+    },
+    {
+      value: 'en-GB',
+      text: 'English (GB)'
+    },
+    {
+      value: 'en-US',
+      text: 'English (US)'
+    },
+    {
+      value: 'it-IT',
+      text: 'Italian'
+    },
+    {
+      value: 'es-ES',
+      text: 'Spanish'
+    },
+    {
+      value: 'de-DE',
+      text: 'German'
+    },
+  ];
+
+  [sourceLangSelect, targetLangSelect]
+    .forEach(select => addOptions(select));
+    
+  function addOptions(select: HTMLSelectElement) {
+    languages.forEach(lang => {
+      const option = document.createElement('option');
+      option.value = lang.value;
+      option.innerText = lang.text;
+      select.options.add(option)
+    });
+      
+  }
+})();
 
 // Language selection handlers
 (function populateVoiceOptions() {
@@ -515,9 +561,8 @@ async function generateSentences() {
  */
 async function playSentences(sentences: Sentence[], translate: boolean, edit: boolean = true) {
   if (!sentences?.length) return;
-  const sourceLang = sourceLangSelect.options[sourceLangSelect.selectedIndex];
-  const targetLang = targetLangSelect.options[sourceLangSelect.selectedIndex];
-  const lang = sourceLang.textContent || 'English';//We will use the source language and translate the text to it
+  const sourceLang = selectedOption(sourceLangSelect).value;
+  const targetLang = selectedOption(targetLangSelect).value;
   const loop = document.getElementById('loop') as HTMLInputElement;
   audioPlayer.loop = false;
   geminiOutput.ondblclick = () => play(false); // Allow replaying the sentences by double-clicking on the output div
@@ -526,7 +571,7 @@ async function playSentences(sentences: Sentence[], translate: boolean, edit: bo
     if (translate) {
       for (const sentence of sentences) {
         //sentence.translation = await translateSentence(sentence.text, lang) || '';
-        sentence.translation = await translateSentence(sentence.text) || '';
+        sentence.translation = await translateSentence(sentence.text, targetLang, sourceLang) || '';
       }
     }
     await play(edit); // Play the sentences with the specified parameters
@@ -567,7 +612,7 @@ async function playSentences(sentences: Sentence[], translate: boolean, edit: bo
     const p2 = document.createElement('p');
     p2.textContent = sentence.translation;
     p2.classList.add('translation');// Add a class for styling the translation
-    p2.lang = lang.toLowerCase(); // Set the language attribute for the translation
+    p2.lang = targetLang.split('-')[0]; // Set the language attribute for the translation
     geminiOutput.appendChild(p2);
     const x = `${100 / geminiOutput.children.length}%`;
     geminiOutput.style.gridTemplateColumns =
@@ -588,37 +633,38 @@ async function playSentences(sentences: Sentence[], translate: boolean, edit: bo
  *
  * @throws An error if the cloud function call fails or returns an unexpected response.
  */
-async function translateSentence(text?: string, targetLang: string|null = null, sourceLang: string|null = null): Promise<string | null> {
-  if (!text) text = geminiInput.value.trim();
+async function translateSentence(text?: string, targetLanguageCode: string | null = null, sourceLanguageCode: string | null = null): Promise<string | null> {
 
-  if (!targetLang)
-    targetLang = targetLangSelect.options[targetLangSelect.selectedIndex]?.value;
+  (function setDefaults() {
+    if (!text) text = geminiInput.value.trim();
   
-  if (!sourceLang)
-    sourceLang = sourceLangSelect.options[sourceLangSelect.selectedIndex]?.value;
-
-  if (!targetLang || !sourceLang) {
-    console.log('either the Target language or the Source langauge are missing');
-    return null;
-  };
+    if (!targetLanguageCode)
+      targetLanguageCode = selectedOption(targetLangSelect).value;
+  
+    if (!sourceLanguageCode)
+      sourceLanguageCode = selectedOption(sourceLangSelect).value;
+    if (!targetLanguageCode || !sourceLanguageCode) {
+      console.log('either the Target language or the Source langauge are missing');
+      throw new Error('Either the sourceLang, the targetLang, or the text are invalid or missing');
+    };
+  })();
 
   return await withGoogleTranslate();
 
   async function withGoogleTranslate() { 
-    const languageCode = (lang: string | null) => lang ? `${lang.toLowerCase()}-${lang.toUpperCase()}` : null;
-    const sourceLanguageCode =languageCode(sourceLang);
-    const targetLanguageCode =languageCode(targetLang);
-    const response = await callCloudFunction('translate', text, { noAudio: true, sourceLanguageCode, targetLanguageCode});
+    const params = { noAudio: true, sourceLanguageCode, targetLanguageCode };
+    if (params.sourceLanguageCode?.startsWith('en-')) params.sourceLanguageCode = 'en-US';
+    const response = await callCloudFunction('translate', text, params);
     return response?.text || null; // Return the translation text or null if not available
   }
 
   async function withGemini(){
-    const query = `Translate the following sentence into ${targetLang}: "${text}". Return only the translation of the sentence without any additional text or comment."`;
+    const query = `Translate the following sentence into the langauge which language code is ${targetLanguageCode}:\n"${text}".\nReturn only the translation of the sentence without any additional text or comment."`;
     const data = await callCloudFunction('ask', query, { noAudio: true });
     const response: Sentence = data?.response;
     const translation = response.text;
     if (!translation) return null;
-    return `(${targetLang} = ${translation})\n`
+    return `(${targetLanguageCode} = ${translation})\n`
   }
 }
 
@@ -815,23 +861,15 @@ async function callCloudFunction(url: string, query?: string, params?: { [key: s
 }
 
 function getLanguageCode(): { code: string, name: string, voice: HTMLOptionElement } {
-  const voice = voiceName.options[voiceName.selectedIndex] || voiceName.options[0]; // Get the selected voice or the first one if none is selected
+  const voice = selectedOption(voiceName) || voiceName.options[0]; // Get the selected voice or the first one if none is selected
   let code;
-
   if (voice.lang && voice.dataset.country)
-    code = `${voice.lang.toLowerCase()}-${voice.dataset.country}`;
-
-  const sourceLang = sourceLangSelect.options[sourceLangSelect.selectedIndex];
-  if (!sourceLang)
-    code = "en-GB";
-  let lang = sourceLang.value;
-  if (lang === 'en')
-    code = `${lang.toLowerCase()}-GB`;
-  else code = `${lang.toLowerCase()}-${lang.toUpperCase()}`;
+    code = `${voice.lang.toLowerCase()}-${voice.dataset.country.toUpperCase()}`;
+  else code = selectedOption(sourceLangSelect).value;
 
   const name = voice.lang ? voice.value : `${code}-${voice.value}`;//If the voice does not have its language property set, it means we are using one of the Chirp3-HD voices, e.g.: en-GB-Chirp3-HD-Achernar
 
-  return {code:code, name:name, voice:voice}
+  return {code, name, voice}
 }
 
 let tokenClient: google.accounts.oauth2.TokenClient | null = null;

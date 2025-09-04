@@ -109,6 +109,13 @@ const preFilled = [
     voiceRate,
     voicePitch
 ];
+function selectedOption(select) {
+    const selected = select.options[select.selectedIndex];
+    if (!selected)
+        throw new Error('No option is selected');
+    return selected;
+}
+;
 function appendAudioPlayer() {
     const div = document.createElement('div');
     div.classList.add('audio');
@@ -152,6 +159,44 @@ sendQueryBtn.onclick = askGemini;
 readBtn.onclick = () => readText();
 transcribeBtn.onclick = getTranscriptionFromLinkToAudio;
 translateBtn.onclick = async () => geminiOutput.textContent = await translateSentence() || 'Translation Failed';
+(function populateSelectLanguageOptions() {
+    const languages = [
+        {
+            value: 'fr-FR',
+            text: 'French'
+        },
+        {
+            value: 'en-GB',
+            text: 'English (GB)'
+        },
+        {
+            value: 'en-US',
+            text: 'English (US)'
+        },
+        {
+            value: 'it-IT',
+            text: 'Italian'
+        },
+        {
+            value: 'es-ES',
+            text: 'Spanish'
+        },
+        {
+            value: 'de-DE',
+            text: 'German'
+        },
+    ];
+    [sourceLangSelect, targetLangSelect]
+        .forEach(select => addOptions(select));
+    function addOptions(select) {
+        languages.forEach(lang => {
+            const option = document.createElement('option');
+            option.value = lang.value;
+            option.innerText = lang.text;
+            select.options.add(option);
+        });
+    }
+})();
 // Language selection handlers
 (function populateVoiceOptions() {
     // Array of available voice options for the Text-to-Speech API
@@ -455,9 +500,8 @@ async function generateSentences() {
 async function playSentences(sentences, translate, edit = true) {
     if (!(sentences === null || sentences === void 0 ? void 0 : sentences.length))
         return;
-    const sourceLang = sourceLangSelect.options[sourceLangSelect.selectedIndex];
-    const targetLang = targetLangSelect.options[sourceLangSelect.selectedIndex];
-    const lang = sourceLang.textContent || 'English'; //We will use the source language and translate the text to it
+    const sourceLang = selectedOption(sourceLangSelect).value;
+    const targetLang = selectedOption(targetLangSelect).value;
     const loop = document.getElementById('loop');
     audioPlayer.loop = false;
     geminiOutput.ondblclick = () => play(false); // Allow replaying the sentences by double-clicking on the output div
@@ -465,7 +509,7 @@ async function playSentences(sentences, translate, edit = true) {
         if (translate) {
             for (const sentence of sentences) {
                 //sentence.translation = await translateSentence(sentence.text, lang) || '';
-                sentence.translation = await translateSentence(sentence.text) || '';
+                sentence.translation = await translateSentence(sentence.text, targetLang, sourceLang) || '';
             }
         }
         await play(edit); // Play the sentences with the specified parameters
@@ -502,7 +546,7 @@ async function playSentences(sentences, translate, edit = true) {
         const p2 = document.createElement('p');
         p2.textContent = sentence.translation;
         p2.classList.add('translation'); // Add a class for styling the translation
-        p2.lang = lang.toLowerCase(); // Set the language attribute for the translation
+        p2.lang = targetLang.split('-')[0]; // Set the language attribute for the translation
         geminiOutput.appendChild(p2);
         const x = `${100 / geminiOutput.children.length}%`;
         geminiOutput.style.gridTemplateColumns =
@@ -520,35 +564,37 @@ async function playSentences(sentences, translate, edit = true) {
  *
  * @throws An error if the cloud function call fails or returns an unexpected response.
  */
-async function translateSentence(text, targetLang = null, sourceLang = null) {
-    var _a, _b;
-    if (!text)
-        text = geminiInput.value.trim();
-    if (!targetLang)
-        targetLang = (_a = targetLangSelect.options[targetLangSelect.selectedIndex]) === null || _a === void 0 ? void 0 : _a.value;
-    if (!sourceLang)
-        sourceLang = (_b = sourceLangSelect.options[sourceLangSelect.selectedIndex]) === null || _b === void 0 ? void 0 : _b.value;
-    if (!targetLang || !sourceLang) {
-        console.log('either the Target language or the Source langauge are missing');
-        return null;
-    }
-    ;
+async function translateSentence(text, targetLanguageCode = null, sourceLanguageCode = null) {
+    (function setDefaults() {
+        if (!text)
+            text = geminiInput.value.trim();
+        if (!targetLanguageCode)
+            targetLanguageCode = selectedOption(targetLangSelect).value;
+        if (!sourceLanguageCode)
+            sourceLanguageCode = selectedOption(sourceLangSelect).value;
+        if (!targetLanguageCode || !sourceLanguageCode) {
+            console.log('either the Target language or the Source langauge are missing');
+            throw new Error('Either the sourceLang, the targetLang, or the text are invalid or missing');
+        }
+        ;
+    })();
     return await withGoogleTranslate();
     async function withGoogleTranslate() {
-        const languageCode = (lang) => lang ? `${lang.toLowerCase()}-${lang.toUpperCase()}` : null;
-        const sourceLanguageCode = languageCode(sourceLang);
-        const targetLanguageCode = languageCode(targetLang);
-        const response = await callCloudFunction('translate', text, { noAudio: true, sourceLanguageCode, targetLanguageCode });
+        var _a;
+        const params = { noAudio: true, sourceLanguageCode, targetLanguageCode };
+        if ((_a = params.sourceLanguageCode) === null || _a === void 0 ? void 0 : _a.startsWith('en-'))
+            params.sourceLanguageCode = 'en-US';
+        const response = await callCloudFunction('translate', text, params);
         return (response === null || response === void 0 ? void 0 : response.text) || null; // Return the translation text or null if not available
     }
     async function withGemini() {
-        const query = `Translate the following sentence into ${targetLang}: "${text}". Return only the translation of the sentence without any additional text or comment."`;
+        const query = `Translate the following sentence into the langauge which language code is ${targetLanguageCode}:\n"${text}".\nReturn only the translation of the sentence without any additional text or comment."`;
         const data = await callCloudFunction('ask', query, { noAudio: true });
         const response = data === null || data === void 0 ? void 0 : data.response;
         const translation = response.text;
         if (!translation)
             return null;
-        return `(${targetLang} = ${translation})\n`;
+        return `(${targetLanguageCode} = ${translation})\n`;
     }
 }
 /**
@@ -726,20 +772,14 @@ async function callCloudFunction(url, query, params) {
     }
 }
 function getLanguageCode() {
-    const voice = voiceName.options[voiceName.selectedIndex] || voiceName.options[0]; // Get the selected voice or the first one if none is selected
+    const voice = selectedOption(voiceName) || voiceName.options[0]; // Get the selected voice or the first one if none is selected
     let code;
     if (voice.lang && voice.dataset.country)
-        code = `${voice.lang.toLowerCase()}-${voice.dataset.country}`;
-    const sourceLang = sourceLangSelect.options[sourceLangSelect.selectedIndex];
-    if (!sourceLang)
-        code = "en-GB";
-    let lang = sourceLang.value;
-    if (lang === 'en')
-        code = `${lang.toLowerCase()}-GB`;
+        code = `${voice.lang.toLowerCase()}-${voice.dataset.country.toUpperCase()}`;
     else
-        code = `${lang.toLowerCase()}-${lang.toUpperCase()}`;
+        code = selectedOption(sourceLangSelect).value;
     const name = voice.lang ? voice.value : `${code}-${voice.value}`; //If the voice does not have its language property set, it means we are using one of the Chirp3-HD voices, e.g.: en-GB-Chirp3-HD-Achernar
-    return { code: code, name: name, voice: voice };
+    return { code, name, voice };
 }
 let tokenClient = null;
 async function getGoogleAccessTokenSilently(scopes) {

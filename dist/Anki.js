@@ -1,6 +1,11 @@
 "use strict";
 createDeck.onclick = generateDeck;
 async function generateDeck() {
+    var _a, _b;
+    const sourceLang = ((_a = sourceLangSelect.selectedOptions[0]) === null || _a === void 0 ? void 0 : _a.value) || null;
+    const targetLang = ((_b = targetLangSelect.selectedOptions[0]) === null || _b === void 0 ? void 0 : _b.value) || null;
+    if (!sourceLang || !targetLang || !confirm(`Source Language: ${sourceLang}\nTarget Language:${targetLang}`))
+        return console.warn(`Canceled by user or for missing language: Source Language: ${sourceLang}\nTarget Language:${targetLang}`);
     const sentences = geminiInput.value
         .trim()
         .split('\n')
@@ -15,7 +20,7 @@ async function generateDeck() {
             deck
                 .filter(card => !card.translation)
                 .filter((card, index) => index < 1000)
-                .forEach(card => addTranslation(card));
+                .forEach(card => addTranslation(card, targetLang, sourceLang));
             downloadDeck(deck);
         }
         ;
@@ -26,7 +31,7 @@ async function generateDeck() {
             continue; // Skip if card creation failed
         deck.push(card);
     }
-    const translations = deck.map((card) => addTranslation(card));
+    const translations = deck.map((card) => addTranslation(card, targetLang, sourceLang));
     await Promise.all(translations);
     downloadDeck(deck);
     return deck;
@@ -60,13 +65,8 @@ async function addAudioBlob(sentence, index, started) {
     return card;
 }
 async function addTranslation(card, targetLang, sourceLang) {
-    var _a, _b;
     if (card.translation)
         return; // Skip if translation already exists
-    if (!sourceLang)
-        sourceLang = (_a = sourceLangSelect.selectedOptions[0]) === null || _a === void 0 ? void 0 : _a.value;
-    if (!targetLang)
-        targetLang = (_b = targetLangSelect.selectedOptions[0]) === null || _b === void 0 ? void 0 : _b.value;
     const translation = await translateSentence(card.sentence, targetLang, sourceLang);
     if (!translation)
         return console.warn(`Translation failed for: ${card.sentence}`);
