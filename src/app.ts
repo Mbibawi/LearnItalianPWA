@@ -187,6 +187,10 @@ translateBtn.onclick = async ()=>geminiOutput.textContent = await translateSente
       text: 'French'
     },
     {
+      value: 'it-IT',
+      text: 'Italian'
+    },
+    {
       value: 'en-GB',
       text: 'English (GB)'
     },
@@ -195,16 +199,16 @@ translateBtn.onclick = async ()=>geminiOutput.textContent = await translateSente
       text: 'English (US)'
     },
     {
-      value: 'it-IT',
-      text: 'Italian'
-    },
-    {
       value: 'es-ES',
       text: 'Spanish'
     },
     {
       value: 'de-DE',
       text: 'German'
+    },
+    {
+      value: 'ar-EG',
+      text: 'Arabic'
     },
   ];
 
@@ -653,7 +657,6 @@ async function translateSentence(text?: string, targetLanguageCode: string | nul
 
   async function withGoogleTranslate() { 
     const params = { noAudio: true, sourceLanguageCode, targetLanguageCode };
-    if (params.sourceLanguageCode?.startsWith('en-')) params.sourceLanguageCode = 'en-US';
     const response = await callCloudFunction('translate', text, params);
     return response?.text || null; // Return the translation text or null if not available
   }
