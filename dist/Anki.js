@@ -12,7 +12,10 @@ async function generateDeck() {
     const now = new Date().getTime();
     const n = 200; //This is the maximum number of sentences that will be translated in a same call
     const numBatches = new Array(Math.ceil(sentences.length / n));
-    const batches = numBatches.map(async (el, index) => await processBatch(index, n * (index + 1)));
+    const batches = numBatches.map((el, index) => processBatch(index, n * (index + 1)));
+    const deck = await Promise.all(batches);
+    downloadDeck(deck.flat());
+    return deck;
     async function processBatch(batchNumber, end) {
         const batch = [];
         if (end > sentences.length)
@@ -28,9 +31,6 @@ async function generateDeck() {
         }
         return await addTranslation(batch, targetLang, sourceLang);
     }
-    const deck = (await Promise.all(batches)).flat();
-    downloadDeck(deck);
-    return deck;
 }
 function downloadDeck(deck) {
     const csvContent = deck
