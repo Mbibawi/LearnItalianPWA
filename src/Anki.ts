@@ -16,11 +16,10 @@ async function generateDeck() {
     const n = 200;//This is the maximum number of sentences that will be translated in a same call
     const numBatches = new Array(Math.ceil(sentences.length / n));
     
-    const batches = numBatches.map((el, index) => processBatch(index,  n * (index + 1)));
+    const batches = numBatches.map((el, index) => processBatch(index,  n * (index + 1))).flat();
     
-    const deck = await Promise.all(batches);
-    downloadDeck(deck.flat());
-    return deck;
+    await Promise.all(batches);
+    return downloadDeck(batches);
 
     async function processBatch(batchNumber:number, end:number) {
         const batch: ankiCard[] = [];
@@ -46,7 +45,7 @@ function downloadDeck(deck: ankiCard[]) {
     downloadFile(blob, `DeckCSV_1to${deck.length}.csv`);
 
     downloadAudioFilesAsZip(deck, `DeckAudios_1to${deck.length}.zip`);
-
+    return deck
 }
 
 async function addAudioBlob([index, sentence]:[number, string], batchNumber: number, started: number): Promise<ankiCard|undefined> {
