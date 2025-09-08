@@ -14,8 +14,7 @@ async function generateDeck() {
     const numBatches = new Array(Math.ceil(sentences.length / n)).fill(1);
     const batches = numBatches.map((el, index) => processBatch(index, n * (index + 1)));
     const deck = await Promise.all(batches);
-    downloadDeck(deck.flat());
-    return deck;
+    return downloadDeck(deck.flat());
     async function processBatch(batchNumber, end) {
         const batch = [];
         if (end > sentences.length)
