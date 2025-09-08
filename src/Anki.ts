@@ -18,8 +18,9 @@ async function generateDeck() {
     
     const batches = numBatches.map((el, index) => processBatch(index,  n * (index + 1))).flat();
     
-    await Promise.all(batches);
-    return downloadDeck(batches);
+    const deck = await Promise.all(batches);
+    downloadDeck(deck.flat());
+    return deck;
 
     async function processBatch(batchNumber:number, end:number) {
         const batch: ankiCard[] = [];
