@@ -14,9 +14,9 @@ async function generateDeck() {
     const now = new Date().getTime();
 
     const n = 200;//This is the maximum number of sentences that will be translated in a same call
-    const numBatches = new Array(Math.ceil(sentences.length / n));
+    const numBatches = new Array(Math.ceil(sentences.length / n)).fill(1);
     
-    const batches = numBatches.map((el, index) => processBatch(index,  n * (index + 1))).flat();
+    const batches = numBatches.map((el, index) => processBatch(index,  n * (index + 1)));
     
     const deck = await Promise.all(batches);
     downloadDeck(deck.flat());
