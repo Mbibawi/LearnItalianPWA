@@ -6,24 +6,27 @@ const { GoogleGenAI } = require("@google/genai");
 const { TextToSpeechClient } = require("@google-cloud/text-to-speech");
 const { SpeechClient } = require("@google-cloud/speech");
 const { Storage } = require("@google-cloud/storage");
+const { TranslationServiceClient } = require('@google-cloud/translate');
 const mm = require("music-metadata");
 
 // --- Configuration ---
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const PROJECT_ID = process.env.GEMINI_PROJECT_ID;
 const GEMINI_MODEL_NAME = process.env.GEMINI_MODEL_NAME || "gemini-1.5-flash";
-const GEMINI_PREVIEW_TTS = "gemini-2.5-flash-preview-tts"; //The new Text-to-Speech dedicated GENAI API;
+
 
 // Initialize the Google Generative AI client
 const genAI = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
 // Initialize the Text-to-Speech client
-const textToSpeechClient = new TextToSpeechClient({
-  apiKey: GEMINI_API_KEY,
-});
+const textToSpeechClient = new TextToSpeechClient();
+
+// Create a client object to interact with the API
+// The project ID is automatically inferred from the environment
+const translate = new TranslationServiceClient();
+
 // Initialize the Speech-to-Text client
-const speechClient = new SpeechClient({
-  apiKey: GEMINI_API_KEY,
-});
+const speechClient = new SpeechClient();
 //Initialize Storage Client
 const storageClient = new Storage();
 
@@ -43,11 +46,11 @@ async function getAudioFromSentence(
     return null;
   }
 
-  return await usingTtsAPI();
+  return await callTextToSpeechAPI();
 
   //return await usingGeminiTtsAPI();
 
-  async function usingTtsAPI() {
+  async function callTextToSpeechAPI() {
     console.log("voiceParams = ", voiceParams);
     if (voiceParams.name?.includes("Chirp3")) ssml = false;
     const input = ssml ? { ssml: sentence } : { text: sentence };
@@ -78,45 +81,6 @@ async function getAudioFromSentence(
         )}...`
       );
       throw new Error(`Text-to-Speech failed: ${ttsError.message}`);
-    }
-  }
-
-  async function usingGeminiTtsAPI() {
-    const ask = `Speak in an informative way, as if you were reading from a newspaper or a book. Ensure the text is being read in a native accent and pronounciation. If the text includes words or sentences in another language than the main language in which you answer the query, you must read and pronounce the foreign language words as a native speaker of this foreign language would do. You must read each word of the text in its relevant native language with the relevant accent and pronounciation.`;
-
-    const generate =
-      "Read the text as if you were a teacher dictating the sentence to a student who is taking notes.";
-
-    const config = {
-      responseMimeType: "audio/mpeg",
-      systemInstruction: generate ? generate : ask, //Instruction about how to read the text
-      speechConfig: {
-        languageCode: voiceParams.languageCode,
-        voiceConfig: {
-          prebuiltVoiceConfig: {
-            voiceName: voiceParams.name,
-          },
-        },
-      },
-    };
-
-    const generateContentRequest = {
-      model: GEMINI_PREVIEW_TTS,
-      contents: [{ role: "user", parts: [{ text: sentence }] }],
-      config,
-    };
-
-    try {
-      const audioBuffer = await genAI.models.generateContent(
-        generateContentRequest
-      );
-      return {
-        text: sentence,
-        audio: audioBuffer,
-      };
-    } catch (error) {
-      console.log("Failed to convert the text with the Gemini 2.5 tts API");
-      return error;
     }
   }
 }
@@ -680,6 +644,40 @@ async function transcribeAPI(req, res) {
 
 };
 
+async function translateTextAPI(req, res) {
+  const { contents, sourceLanguageCode, targetLanguageCode } = req.body;
+  
+  if (!contents || !sourceLanguageCode || !targetLanguageCode) {
+    return res.status(400).send('Bad Request. Please provide "query", "sourceLanguageCode", and "targetLanguageCode" in the request body.');
+  }
+
+  const parent = `projects/${PROJECT_ID}/locations/global`;
+
+    try {
+       // Translate a single piece of text
+    const [response] = await translate.translateText({
+      parent,
+      contents,
+      sourceLanguageCode,
+      targetLanguageCode,
+      mimeType: 'text/plain',
+    });
+
+      // The translated text is within the "translations" array of the response
+      //@ts-ignore
+    const translatedText = response.translations?.map(t=>t.translatedText);//this is a string[]
+
+    res.status(200).json({ text: translatedText });
+
+    } catch (error) {
+      // Log the error for debugging
+      console.error('ERROR:', error);
+      // Send a 500 status code with a descriptive error message
+      res.status(500).send(`Error: Could not translate text. ${error.message}`);
+    }
+};
+
+
 async function readTextAPI(req, res) {
   const { query, voiceParams, audioConfig } = req.body;//The query is the sentence that we want the Text-To-Speech API to read aloud.
 
@@ -760,6 +758,8 @@ exports.geminiProxy = async (req, res) => {
     await askAPI(req, res); // Call the dedicated handler function
   } else if (req.path === "/api/transcribe") {
     await transcribeAPI(req, res); // Call the dedicated handler function
+  } else if (req.path === "/api/translate") {
+    await translateTextAPI(req, res); // Call the dedicated handler function
   } else if (req.path === "/api/read") {
     await readTextAPI(req, res); // Call the dedicated handler function
   } else if (req.path === "/api/deleteFile") {

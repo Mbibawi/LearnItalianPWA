@@ -1,41 +1,38 @@
 
 createDeck.onclick = generateDeck;
 async function generateDeck() {
-    const sourceLang = sourceLangSelect.selectedOptions[0]?.value || null;
-    const targetLang = targetLangSelect.selectedOptions[0]?.value || null;
+    const sourceLang = sourceLangSelect.selectedOptions[0]?.value;
+    const targetLang = targetLangSelect.selectedOptions[0]?.value;
 
     if (!sourceLang || !targetLang || !confirm(`Source Language: ${sourceLang}\nTarget Language:${targetLang}`))
         return console.warn(`Canceled by user or for missing language: Source Language: ${sourceLang}\nTarget Language:${targetLang}`);
 
     const sentences = geminiInput.value
         .trim()
-        .split('\n')
-        .entries();
+        .split('\n');
 
     const now = new Date().getTime();
-    const deck = [];
+
+    const n = 200;//This is the maximum number of sentences that will be translated in a same call
+    const numBatches = new Array(Math.ceil(sentences.length / n));
     
-    for (const [index, sentence] of sentences) {
-        //!We need the "for of" loop to pause execution for each sentence to respect the rate limit of the Text-To-Speech API.
-        if ((index + 1) % 500 === 0) {
-            //Each 500 decks, we will process the translation and download the card that have been created so far.
-            console.log('=======>Processing sentence:', index);
-            deck
-                .filter(card => !card.translation)
-                .filter((card, index)=>index<1000)
-                .forEach(card => addTranslation(card, targetLang, sourceLang));
-                downloadDeck(deck);
-        };
-        if (!sentence) continue; // Skip empty lines
-        const card = await addAudioBlob(sentence, index, now);
-        if(!card) continue; // Skip if card creation failed
-        deck.push(card);
+    const batches = numBatches.map(async (el, index) => await processBatch(index,  n * (index + 1)));
+    
+    async function processBatch(batchNumber:number, end:number) {
+        const batch: ankiCard[] = [];
+        if (end > sentences.length) end = sentences.length;
+        const slice = sentences.slice(batchNumber * n, end).entries();
+        for (const sentence of slice) {
+            if (!sentence) continue; // Skip empty lines
+            const card = await addAudioBlob(sentence, batchNumber, now);
+            if(!card) continue; // Skip if card creation failed
+            batch.push(card);
+        }  
+        return await addTranslation(batch, targetLang, sourceLang)
     }
 
-    const translations = deck.map((card) => addTranslation(card, targetLang, sourceLang));
-
-    await Promise.all(translations);
     
+    const deck = (await Promise.all(batches)).flat();
     downloadDeck(deck);
     return deck
 }
@@ -53,8 +50,7 @@ function downloadDeck(deck: ankiCard[]) {
 
 }
 
-async function addAudioBlob(sentence: string, index: number, started: number): Promise<ankiCard|undefined> {
-    const batchNumber = Math.floor(index / 200);
+async function addAudioBlob([index, sentence]:[number, string], batchNumber: number, started: number): Promise<ankiCard|undefined> {
     await pauseExecution(batchNumber, started); //Pausing the execution to respect quota limit of the Text-To-Speech API requests per minute which is 200 requests
 
     const card: ankiCard = {
@@ -75,16 +71,24 @@ async function addAudioBlob(sentence: string, index: number, started: number): P
     return card;
 }
 
-async function addTranslation(card: ankiCard, targetLang: string, sourceLang:string) {
-    if (card.translation) return; // Skip if translation already exists
-    const translation = await translateSentence(card.sentence, targetLang,sourceLang);
-    if (!translation) return console.warn(`Translation failed for: ${card.sentence}`);
-    card.translation = translation;
-    card.csv = `[sound:${card.audio.name}] | ${card.sentence} | ${translation}`;
+async function addTranslation(cards: ankiCard[], targetLang: string, sourceLang:string) {
+    const sentences = cards.filter(card=>!card.translation).map(card => card.sentence);
+    const translations =
+        await translateSentence(sentences, targetLang, sourceLang);
+    
+    translations
+        .forEach((translation, index) => {
+                const card = cards[index];
+                if (!translation) return console.warn(`Translation failed for: ${card.sentence}`);
+                card.translation = translation;
+                card.csv = `[sound:${card.audio.name}] | ${card.sentence} | ${translation}`;
+        });
+    return cards
+
 }
 
 async function pauseExecution(batchNumber: number, started: number) {
-    if (!batchNumber) return;
+    if (!batchNumber) return;//If this is the first batch (index = 0) we do not pause
     const minute = 60 * 1000;
 
     // Calculate the ideal time this sentence should be processed.
@@ -152,8 +156,8 @@ async function _FixTranslationFailed() {
             continue
         }
         const italian = sentence.split(',')[1].trim();
-        const translation = await translateSentence(italian) || 'TranslationFailed';
-        const fixed = sentence.replace('TranslationFailed', translation);
+        const translation = await translateSentence([italian]) || 'TranslationFailed';
+        const fixed = sentence.replace('TranslationFailed', [translation].join());
         deck.push(fixed);
 
     }
@@ -163,3 +167,4 @@ async function _FixTranslationFailed() {
     downloadFile(blob, `FixedTranslations_1to${deck.length +1}.csv`);
 
     }
+

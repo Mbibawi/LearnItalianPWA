@@ -16,10 +16,12 @@
     "author": "Mina BIBAWI",
     "license": "MIT",
     "dependencies": {
-      "@google/genai": "^1.1.0",
-      "@google-cloud/text-to-speech": "^6.1.0",
-      "@google-cloud/speech": "^7.1.0",
-      "@google-cloud/storage": "^7.0.0"
+      "@google/genai": "^1.15.0",
+      "@google-cloud/translate": "^9.2.0",
+      "@google-cloud/text-to-speech": "^6.2.0",
+      "@google-cloud/speech": "^7.2.0",
+      "@google-cloud/storage": "^7.17.0",
+      "music-metadata": "^7.13.0"
     },
     "devDependencies": {
       "@google-cloud/functions-framework": "^4.0.0"

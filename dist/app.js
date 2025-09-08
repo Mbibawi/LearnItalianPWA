@@ -158,7 +158,7 @@ sentencesBtn.onclick = generateSentences;
 sendQueryBtn.onclick = askGemini;
 readBtn.onclick = () => readText();
 transcribeBtn.onclick = getTranscriptionFromLinkToAudio;
-translateBtn.onclick = async () => geminiOutput.textContent = await translateSentence() || 'Translation Failed';
+translateBtn.onclick = async () => geminiOutput.textContent = (await translateSentence()).join('\n') || 'Translation Failed';
 (function populateSelectLanguageOptions() {
     const languages = [
         {
@@ -511,10 +511,8 @@ async function playSentences(sentences, translate, edit = true) {
     geminiOutput.ondblclick = () => play(false); // Allow replaying the sentences by double-clicking on the output div
     try {
         if (translate) {
-            for (const sentence of sentences) {
-                //sentence.translation = await translateSentence(sentence.text, lang) || '';
-                sentence.translation = await translateSentence(sentence.text, targetLang, sourceLang) || '';
-            }
+            (await translateSentence(sentences.map(s => s.text), targetLang, sourceLang))
+                .forEach((t, i) => sentences[i].translation = t || '');
         }
         await play(edit); // Play the sentences with the specified parameters
     }
@@ -541,22 +539,28 @@ async function playSentences(sentences, translate, edit = true) {
      * @returns
      */
     function showText(sentence) {
-        const p1 = document.createElement('p');
-        p1.classList.add('sentence');
-        p1.textContent = sentence.text;
-        geminiOutput.appendChild(p1);
-        if (!sentence.translation)
-            return;
-        const p2 = document.createElement('p');
-        p2.textContent = sentence.translation;
-        p2.classList.add('translation'); // Add a class for styling the translation
-        p2.lang = targetLang.split('-')[0]; // Set the language attribute for the translation
-        geminiOutput.appendChild(p2);
-        const x = `${100 / geminiOutput.children.length}%`;
-        geminiOutput.style.gridTemplateColumns =
-            Array.from(geminiOutput.children)
-                .map(p => x)
-                .join(' ');
+        (function sentenceText() {
+            const p1 = document.createElement('p');
+            p1.classList.add('sentence');
+            p1.textContent = sentence.text;
+            geminiOutput.appendChild(p1);
+        })();
+        (function translation() {
+            if (!sentence.translation)
+                return;
+            const p2 = document.createElement('p');
+            p2.textContent = sentence.translation;
+            p2.classList.add('translation'); // Add a class for styling the translation
+            p2.lang = targetLang.split('-')[0]; // Set the language attribute for the translation
+            geminiOutput.appendChild(p2);
+        })();
+        (function formatGrid() {
+            const x = `${100 / geminiOutput.children.length}%`;
+            geminiOutput.style.gridTemplateColumns =
+                Array.from(geminiOutput.children)
+                    .map(p => x)
+                    .join(' ');
+        })();
     }
 }
 /**
@@ -568,10 +572,10 @@ async function playSentences(sentences, translate, edit = true) {
  *
  * @throws An error if the cloud function call fails or returns an unexpected response.
  */
-async function translateSentence(text, targetLanguageCode = null, sourceLanguageCode = null) {
+async function translateSentence(contents = [], targetLanguageCode = null, sourceLanguageCode = null) {
     (function setDefaults() {
-        if (!text)
-            text = geminiInput.value.trim();
+        if (!contents.length)
+            contents = [geminiInput.value.trim()];
         if (!targetLanguageCode)
             targetLanguageCode = selectedOption(targetLangSelect).value;
         if (!sourceLanguageCode)
@@ -584,12 +588,12 @@ async function translateSentence(text, targetLanguageCode = null, sourceLanguage
     })();
     return await withGoogleTranslate();
     async function withGoogleTranslate() {
-        const params = { noAudio: true, sourceLanguageCode, targetLanguageCode };
-        const response = await callCloudFunction('translate', text, params);
-        return (response === null || response === void 0 ? void 0 : response.text) || null; // Return the translation text or null if not available
+        const params = { noAudio: true, contents, sourceLanguageCode, targetLanguageCode };
+        const response = await callCloudFunction('translate', null, params);
+        return response === null || response === void 0 ? void 0 : response.text; // Return the translation text or null if not available
     }
     async function withGemini() {
-        const query = `Translate the following sentence into the langauge which language code is ${targetLanguageCode}:\n"${text}".\nReturn only the translation of the sentence without any additional text or comment."`;
+        const query = `Translate the following sentence into the langauge which language code is ${targetLanguageCode}:\n"${contents.join()}".\nReturn only the translation of the sentence without any additional text or comment."`;
         const data = await callCloudFunction('ask', query, { noAudio: true });
         const response = data === null || data === void 0 ? void 0 : data.response;
         const translation = response.text;
@@ -703,8 +707,6 @@ function getAudioUrl(audio) {
  */
 async function callCloudFunction(url, query, params) {
     // const accessToken = await getAccessToken();
-    if (!query)
-        return alert('Please enter a query to send to Gemini');
     if (!(params === null || params === void 0 ? void 0 : params.audioConfig) && voiceName.selectedIndex < 0)
         return alert('Please select a voice to use for the audio playback');
     const { code, name, voice } = getLanguageCode(); //e.g.: 'en-US', 'it-IT'
@@ -739,7 +741,7 @@ async function callCloudFunction(url, query, params) {
      */
     async function fetchGemini() {
         const body = {
-            query: query,
+            query,
             voiceParams: voiceParams,
             ...params, // Include any additional parameters if needed
         };
@@ -1159,7 +1161,7 @@ async function getTranscriptionFromLinkToAudio() {
 }
 async function deleteFileFromGoogleStorageBucket(fileURI) {
     const fileName = fileURI.split('/')[0];
-    const response = await callCloudFunction('deleteFile', 'delete file from storage', { fileName: fileName });
+    const response = await callCloudFunction('deleteFile', null, { fileName: fileName });
 }
 function showProgress(message, clear = false) {
     if (clear)
